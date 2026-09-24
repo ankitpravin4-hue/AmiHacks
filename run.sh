@@ -33,18 +33,23 @@ mkdir -p "$LOGDIR"
 
 kill_port() {
   local port="$1"
-  local pids
-  pids="$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
-  if [[ -n "${pids}" ]]; then
-    echo "Freeing :$port (pids ${pids//$'\n'/ })"
-    # shellcheck disable=SC2086
-    kill ${pids} 2>/dev/null || true
-    sleep 0.3
-    pids="$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
-    if [[ -n "${pids}" ]]; then
-      # shellcheck disable=SC2086
-      kill -9 ${pids} 2>/dev/null || true
-    fi
+  local list="$LOGDIR/.listen-$port"
+  : >"$list"
+  # File redirect (not $(...)): bash 3.2 reports "syntax error near ')'"
+  # if SIGINT arrives during command substitution inside a trap.
+  lsof -tiTCP:"$port" -sTCP:LISTEN >"$list" 2>/dev/null || true
+  if [[ ! -s "$list" ]]; then
+    return 0
+  fi
+  echo -n "Freeing :$port (pids "
+  tr '\n' ' ' <"$list"
+  echo ")"
+  xargs kill <"$list" 2>/dev/null || true
+  sleep 0.3
+  : >"$list"
+  lsof -tiTCP:"$port" -sTCP:LISTEN >"$list" 2>/dev/null || true
+  if [[ -s "$list" ]]; then
+    xargs kill -9 <"$list" 2>/dev/null || true
   fi
 }
 
@@ -64,7 +69,10 @@ wait_http() {
 
 PIDS=()
 cleanup() {
-  trap - EXIT INT TERM
+  # Swallow further INT/TERM so cleanup is not re-entered mid-statement.
+  trap '' INT TERM
+  trap - EXIT
+  set +e
   echo ""
   echo "Stopping ShopAPI, scanner, and dashboard…"
   if [[ ${#PIDS[@]} -gt 0 ]]; then
