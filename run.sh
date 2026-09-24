@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Boot ShopAPI (:8000), the scanner service (:8100), and the dashboard (:5173).
+# Boot ShopAPI (:8000), BankAPI (:8010), the scanner service (:8100), and the dashboard (:5173).
 # Usage: ./run.sh [--seed]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 API_DIR="$ROOT/packages/vulnerable-api"
+BANK_DIR="$ROOT/packages/vulnerable-api-bank"
 SCAN_DIR="$ROOT/packages/scanner"
 DASH_DIR="$ROOT/packages/dashboard"
 LOGDIR="$ROOT/.run"
@@ -28,6 +29,7 @@ done
 
 mkdir -p "$LOGDIR"
 : >"$LOGDIR/shopapi.log"
+: >"$LOGDIR/bankapi.log"
 : >"$LOGDIR/scanner.log"
 : >"$LOGDIR/dashboard.log"
 
@@ -74,13 +76,14 @@ cleanup() {
   trap - EXIT
   set +e
   echo ""
-  echo "Stopping ShopAPI, scanner, and dashboard…"
+  echo "Stopping ShopAPI, BankAPI, scanner, and dashboard…"
   if [[ ${#PIDS[@]} -gt 0 ]]; then
     kill "${PIDS[@]}" 2>/dev/null || true
     sleep 0.4
     kill -9 "${PIDS[@]}" 2>/dev/null || true
   fi
   kill_port 8000
+  kill_port 8010
   kill_port 8100
   kill_port 5173
 }
@@ -90,6 +93,10 @@ echo "Preparing environments…"
 if [[ ! -d "$API_DIR/.venv" ]]; then
   python3 -m venv "$API_DIR/.venv"
   "$API_DIR/.venv/bin/pip" install -r "$API_DIR/requirements.txt"
+fi
+if [[ ! -d "$BANK_DIR/.venv" ]]; then
+  python3 -m venv "$BANK_DIR/.venv"
+  "$BANK_DIR/.venv/bin/pip" install -r "$BANK_DIR/requirements.txt"
 fi
 if [[ ! -d "$SCAN_DIR/.venv" ]]; then
   python3 -m venv "$SCAN_DIR/.venv"
@@ -105,11 +112,13 @@ fi
 
 echo "Clearing stale listeners…"
 kill_port 8000
+kill_port 8010
 kill_port 8100
 kill_port 5173
 
 echo ""
 echo "  ShopAPI     http://127.0.0.1:8000   (Swagger /docs)"
+echo "  BankAPI     http://127.0.0.1:8010   (Swagger /docs)"
 echo "  Scanner     http://127.0.0.1:8100   (REST + WebSocket)"
 echo "  Dashboard   http://localhost:5173"
 echo ""
@@ -117,6 +126,10 @@ echo ""
 (cd "$API_DIR" && .venv/bin/python -m app >>"$LOGDIR/shopapi.log" 2>&1) &
 PIDS+=($!)
 wait_http "http://127.0.0.1:8000/healthz" "ShopAPI"
+
+(cd "$BANK_DIR" && .venv/bin/python -m app >>"$LOGDIR/bankapi.log" 2>&1) &
+PIDS+=($!)
+wait_http "http://127.0.0.1:8010/healthz" "BankAPI"
 
 if [[ "$SEED" -eq 1 ]]; then
   echo "Seeding one ShopAPI scan via the CLI (identities preset: shopapi)…"
@@ -140,7 +153,7 @@ PIDS+=($!)
 wait_http "http://127.0.0.1:5173/" "Dashboard"
 
 echo ""
-echo "All three are up. Ctrl+C stops them together."
+echo "All four are up. Ctrl+C stops them together."
 echo "Streaming logs from $LOGDIR …"
 echo ""
-tail -n +1 -F "$LOGDIR/shopapi.log" "$LOGDIR/scanner.log" "$LOGDIR/dashboard.log"
+tail -n +1 -F "$LOGDIR/shopapi.log" "$LOGDIR/bankapi.log" "$LOGDIR/scanner.log" "$LOGDIR/dashboard.log"

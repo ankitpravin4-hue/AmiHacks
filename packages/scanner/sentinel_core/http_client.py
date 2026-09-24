@@ -14,7 +14,10 @@ import httpx
 
 from sentinel_core.models import Evidence, RequestEvidence, ResponseEvidence
 
-DEFAULT_ALLOWLIST: tuple[str, ...] = ("http://127.0.0.1:8000",)
+DEFAULT_ALLOWLIST: tuple[str, ...] = (
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:8010",
+)
 DESTRUCTIVE_METHODS: frozenset[str] = frozenset({"DELETE"})
 SENSITIVE_HEADER_SUBSTR: tuple[str, ...] = (
     "authorization",
@@ -38,7 +41,7 @@ class UnsafeMethodError(PermissionError):
 
 
 def default_allowlist() -> list[str]:
-    """Allow-list from `$ALLOWLIST` (comma-separated) or the ShopAPI default."""
+    """Allow-list from `$ALLOWLIST` (comma-separated) or the local demo defaults."""
     raw = os.getenv("ALLOWLIST", ",".join(DEFAULT_ALLOWLIST))
     return [part.strip().rstrip("/") for part in raw.split(",") if part.strip()]
 

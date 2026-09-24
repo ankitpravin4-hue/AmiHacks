@@ -80,8 +80,9 @@ class ScanEngine:
             )
 
             _emit(on_progress, 25, "Running detectors")
+            client_bases = _client_allowlist(config)
             async with SafeClient(
-                allowed_base_urls=config.allowlist,
+                allowed_base_urls=client_bases,
                 safe_mode=config.safe_mode,
             ) as client:
                 findings = await run_all_detectors(endpoints, identities, client)
@@ -120,6 +121,16 @@ class ScanEngine:
         save_report(report)
         _emit(on_progress, 100, "Report persisted")
         return report
+
+
+def _client_allowlist(config: ScanConfig) -> list[str]:
+    """Prefer the scan target so probes do not hit a different allow-listed host."""
+    target = (config.target or "").rstrip("/")
+    allow = [item.rstrip("/") for item in config.allowlist]
+    if target and target != SPEC_ONLY_TARGET:
+        rest = [item for item in allow if item != target]
+        return [target, *rest]
+    return allow or [target]
 
 
 def _normalize_config(config: ScanConfig) -> ScanConfig:

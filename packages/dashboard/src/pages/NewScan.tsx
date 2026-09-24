@@ -11,6 +11,21 @@ type InputMode = "url" | "upload" | "paste";
 const SPEC_EXT = new Set([".json", ".yaml", ".yml"]);
 const SPEC_MAX_BYTES = 2 * 1024 * 1024;
 
+const DEMO_TARGETS = [
+  {
+    id: "shopapi",
+    label: "ShopAPI — :8000",
+    url: "http://127.0.0.1:8000",
+    preset: "shopapi",
+  },
+  {
+    id: "bankapi",
+    label: "BankAPI — :8010",
+    url: "http://127.0.0.1:8010",
+    preset: "bankapi",
+  },
+] as const;
+
 const VULN_CHIPS = [
   { label: "BOLA/IDOR", needsLive: true },
   { label: "Excessive Data Exposure", needsLive: false },
@@ -159,7 +174,7 @@ export function NewScanPage() {
       <p className="text-2xs font-medium uppercase tracking-[0.16em] text-inktext-faint">New scan</p>
       <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-inktext">Target</h1>
       <p className="mt-1 text-sm text-inktext-muted">
-        Live allow-listed URL, or an OpenAPI/Swagger spec (JSON or YAML).
+        Live allow-listed URL (ShopAPI :8000 or BankAPI :8010), or an OpenAPI/Swagger spec.
       </p>
 
       <p className="mt-6 rounded-[8px] border border-accent/35 bg-accent/10 px-4 py-3 text-sm leading-relaxed text-inktext">
@@ -213,19 +228,43 @@ export function NewScanPage() {
           </div>
 
           {mode === "url" ? (
-            <label className="block text-sm">
-              <span className="mb-1.5 block text-inktext-muted">Target base URL</span>
-              <input
-                value={target}
-                onChange={(event) => setTarget(event.target.value)}
-                className="w-full rounded-[8px] border border-line bg-ink-900 px-3 py-2 font-mono text-sm text-inktext outline-none ring-accent/30 focus:ring-2"
-                placeholder="http://127.0.0.1:8000"
-                required
-              />
-              <span className="mt-1.5 block text-xs text-inktext-faint">
-                Scanner fetches /openapi.json from this allow-listed host.
-              </span>
-            </label>
+            <>
+              <label className="block text-sm">
+                <span className="mb-1.5 block text-inktext-muted">Demo target</span>
+                <select
+                  value={DEMO_TARGETS.find((item) => item.url === target)?.id ?? "shopapi"}
+                  onChange={(event) => {
+                    const chosen = DEMO_TARGETS.find((item) => item.id === event.target.value);
+                    if (!chosen) return;
+                    setTarget(chosen.url);
+                    setPreset(chosen.preset);
+                  }}
+                  className="w-full rounded-[8px] border border-line bg-ink-800 px-3 py-2 text-sm text-inktext outline-none ring-accent/30 focus:ring-2"
+                >
+                  {DEMO_TARGETS.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1.5 block text-xs text-inktext-faint">
+                  Fills the allow-listed URL and matching identities preset. Both scan live.
+                </span>
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1.5 block text-inktext-muted">Target base URL</span>
+                <input
+                  value={target}
+                  onChange={(event) => setTarget(event.target.value)}
+                  className="w-full rounded-[8px] border border-line bg-ink-900 px-3 py-2 font-mono text-sm text-inktext outline-none ring-accent/30 focus:ring-2"
+                  placeholder="http://127.0.0.1:8000"
+                  required
+                />
+                <span className="mt-1.5 block text-xs text-inktext-faint">
+                  Scanner fetches /openapi.json from this allow-listed host.
+                </span>
+              </label>
+            </>
           ) : null}
 
           {mode === "upload" ? (
@@ -285,6 +324,7 @@ export function NewScanPage() {
                 className="w-full rounded-[8px] border border-line bg-ink-800 px-3 py-2 text-sm text-inktext outline-none ring-accent/30 focus:ring-2"
               >
                 <option value="shopapi">shopapi — alice / bob / admin / anonymous</option>
+                <option value="bankapi">bankapi — alice / bob / admin / anonymous</option>
               </select>
             </label>
           ) : null}

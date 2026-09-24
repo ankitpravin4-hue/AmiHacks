@@ -18,6 +18,7 @@ from sentinel_core.models import ScanConfig
 SCANNER_ROOT = Path(__file__).resolve().parent.parent
 PRESETS = {
     "shopapi": SCANNER_ROOT / "configs" / "shopapi.identities.yaml",
+    "bankapi": SCANNER_ROOT / "configs" / "bankapi.identities.yaml",
 }
 
 app = typer.Typer(
@@ -76,7 +77,7 @@ def scan_cmd(
     identities: str = typer.Option(
         "shopapi",
         "--identities",
-        help="Preset name (shopapi) or path to an identities YAML",
+        help="Preset name (shopapi, bankapi) or path to an identities YAML",
     ),
     spec: Optional[str] = typer.Option(
         None,

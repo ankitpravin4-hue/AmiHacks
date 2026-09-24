@@ -10,6 +10,7 @@ import yaml
 SCANNER_ROOT = Path(__file__).resolve().parent.parent
 PRESET_FILES = {
     "shopapi": SCANNER_ROOT / "configs" / "shopapi.identities.yaml",
+    "bankapi": SCANNER_ROOT / "configs" / "bankapi.identities.yaml",
 }
 
 
@@ -20,7 +21,7 @@ def resolve_identities_file(
 ) -> Path:
     """Return a YAML path the engine can load.
 
-    The ``shopapi`` preset is alice / bob / admin / anonymous with demo tokens.
+    Presets: ``shopapi`` (ShopAPI) and ``bankapi`` (BankAPI).
     A raw ``identities_config`` is written to a temp file next to the DB.
     """
     if identities_config is not None:
