@@ -1,0 +1,31 @@
+# Ground-truth identities for the local ShopAPI target.
+# `owns` is what each identity is *allowed* to access — the BOLA detector
+# uses this to distinguish a real leak from a legitimate read.
+identities:
+  - name: alice
+    is_admin: false
+    headers:
+      Authorization: Bearer tok_alice
+    owns:
+      user: [1]
+      order: [101, 102]
+
+  - name: bob
+    is_admin: false
+    headers:
+      Authorization: Bearer tok_bob
+    owns:
+      user: [2]
+      order: [201, 202]
+
+  - name: admin
+    is_admin: true
+    headers:
+      Authorization: Bearer tok_admin
+    owns:
+      user: [3]
+
+  - name: anonymous
+    is_admin: false
+    headers: {}
+    owns: {}
