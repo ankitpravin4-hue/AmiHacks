@@ -18,6 +18,7 @@ const CLASS_LABELS: Record<string, string> = {
   broken_authentication: "Broken Authentication",
   missing_rate_limit: "Missing Rate Limit",
   mass_assignment: "Mass Assignment",
+  missing_security: "Missing Security",
 };
 
 export function prettyClass(vulnClass: string): string {

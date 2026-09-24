@@ -12,15 +12,19 @@ from sentinel_core.models import (
     Finding,
     RequestEvidence,
     ResponseEvidence,
+    SkippedCheck,
     SummaryStats,
 )
 
+SPEC_TEXT_MAX = 1_500_000
+
 
 class ScanCreate(BaseModel):
-    """Body for POST /scans."""
+    """Body for POST /scans. Live URL, pasted spec, or uploaded spec contents."""
 
-    target_base_url: str
+    target_base_url: str | None = None
     spec_url: str | None = None
+    spec_text: str | None = None
     identities_preset: str | None = "shopapi"
     identities_config: dict[str, Any] | list[dict[str, Any]] | None = None
     safe_mode: bool = True
@@ -58,6 +62,7 @@ class ScanDetail(BaseModel):
     chains: list[AttackChain] = Field(default_factory=list)
     access_matrix: dict[str, dict[str, str]] | None = None
     summary: SummaryStats = Field(default_factory=SummaryStats)
+    skipped_checks: list[SkippedCheck] = Field(default_factory=list)
 
 
 class ReplayResult(BaseModel):

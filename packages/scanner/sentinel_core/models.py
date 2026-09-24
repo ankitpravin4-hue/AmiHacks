@@ -117,9 +117,17 @@ class ScanConfig(BaseModel):
 
     target: str = ""
     spec_url: str | None = None
+    spec_text: str | None = None
     allowlist: list[str] = Field(default_factory=list)
     safe_mode: bool = True
     identities_file: str | None = None
+
+
+class SkippedCheck(BaseModel):
+    """A detector that was not run, with an honest reason."""
+
+    check: str
+    reason: str
 
 
 class AttackChain(BaseModel):
@@ -146,3 +154,4 @@ class Report(BaseModel):
     access_matrix: dict[str, dict[str, str]] | None = None
     summary: SummaryStats = Field(default_factory=SummaryStats)
     scan_config: ScanConfig = Field(default_factory=ScanConfig)
+    skipped_checks: list[SkippedCheck] = Field(default_factory=list)

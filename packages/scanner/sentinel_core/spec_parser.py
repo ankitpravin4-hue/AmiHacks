@@ -136,6 +136,10 @@ def _auth_required(operation: dict[str, Any], spec: dict[str, Any]) -> bool:
     return any(bool(item) for item in global_req)
 
 
+class SpecParseError(ValueError):
+    """Readable failure when JSON/YAML OpenAPI text cannot be parsed."""
+
+
 def _loads(text: str) -> dict[str, Any]:
     """Parse JSON or YAML into a spec object."""
     try:
@@ -144,9 +148,12 @@ def _loads(text: str) -> dict[str, Any]:
             return data
     except json.JSONDecodeError:
         pass
-    data = yaml.safe_load(text)
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise SpecParseError(f"Invalid YAML: {exc}") from exc
     if not isinstance(data, dict):
-        raise ValueError("OpenAPI/Swagger document must be a JSON or YAML object")
+        raise SpecParseError("OpenAPI/Swagger document must be a JSON or YAML object")
     return data
 
 
@@ -183,10 +190,20 @@ class SpecParser:
                 )
         return endpoints
 
+    def load_from_text(self, text: str) -> list[Endpoint]:
+        """Normalize a raw OpenAPI/Swagger JSON or YAML string."""
+        if not (text or "").strip():
+            raise SpecParseError("Spec text is empty")
+        try:
+            return self.parse(_loads(text))
+        except SpecParseError:
+            raise
+        except (ValueError, KeyError, TypeError) as exc:
+            raise SpecParseError(str(exc) or "Invalid OpenAPI/Swagger document") from exc
+
     def load_from_file(self, path: str | Path) -> list[Endpoint]:
         """Load a JSON or YAML spec from disk and normalize it."""
-        text = Path(path).read_text(encoding="utf-8")
-        return self.parse(_loads(text))
+        return self.load_from_text(Path(path).read_text(encoding="utf-8"))
 
     def load_from_url(
         self,

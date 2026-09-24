@@ -8,7 +8,7 @@ import pytest
 
 from sentinel_core.http_client import AllowlistDeniedError, SafeClient
 from sentinel_core.identity import IdentityProvider
-from sentinel_core.spec_parser import SpecParser, bola_candidates
+from sentinel_core.spec_parser import SpecParseError, SpecParser, bola_candidates
 
 SCANNER_ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "shopapi.openapi.json"
@@ -59,6 +59,29 @@ def test_shopapi_safe_endpoints_are_not_bola_candidates() -> None:
     assert not healthz.is_bola_candidate
     assert products.auth_required is False
     assert healthz.auth_required is False
+
+
+def test_load_from_text_json_and_yaml() -> None:
+    """Same parser path for pasted JSON and YAML — no duplicate loader."""
+    parser = SpecParser()
+    json_text = FIXTURE.read_text(encoding="utf-8")
+    from_json = parser.load_from_text(json_text)
+    yaml_text = (
+        "openapi: '3.0.0'\n"
+        "paths:\n"
+        "  /healthz:\n"
+        "    get:\n"
+        "      responses:\n"
+        "        '200':\n"
+        "          description: ok\n"
+    )
+    from_yaml = parser.load_from_text(yaml_text)
+    assert any(item.key == "GET /users/{user_id}" for item in from_json)
+    assert [item.key for item in from_yaml] == ["GET /healthz"]
+    with pytest.raises(SpecParseError, match="empty"):
+        parser.load_from_text("   ")
+    with pytest.raises(SpecParseError):
+        parser.load_from_text("not-a-spec")
 
 
 def test_object_id_param_rules() -> None:

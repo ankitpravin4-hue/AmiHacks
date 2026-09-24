@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.datastructures import UploadFile
 
 from sentinel_core.ai import LLMRemediationAdvisor, is_configured
 from sentinel_core.ai.gemini import AI_NOT_CONFIGURED, AI_RATE_LIMITED, AI_UNAVAILABLE
 from sentinel_core.engine import ScanEngine
 from sentinel_core.http_client import default_allowlist, url_is_allowed
 from sentinel_core.models import Finding, Report, ScanConfig
+from sentinel_core.spec_parser import SpecParseError, SpecParser
+from sentinel_core.spec_static import SPEC_ONLY_TARGET
 from sentinel_core.storage import DEFAULT_DB_PATH, Storage, configure, get_storage
 from sentinel_service.presets import resolve_identities_file
 from sentinel_service.progress import ProgressHub
@@ -20,6 +23,7 @@ from sentinel_service.schemas import (
     AIAnswer,
     AskQuestion,
     ReplayResult,
+    SPEC_TEXT_MAX,
     ScanAccepted,
     ScanCreate,
     ScanDetail,
@@ -63,11 +67,10 @@ def create_app(
         return {"status": "ok", "service": "sentinel-service"}
 
     @app.post("/scans", response_model=ScanAccepted)
-    async def start_scan(body: ScanCreate) -> ScanAccepted:
-        """Queue a background scan. Rejects non-allow-listed targets with 400."""
-        _assert_allowed(body.target_base_url, app.state.allowlist)
-        spec_url = body.spec_url or f"{body.target_base_url.rstrip('/')}/openapi.json"
-        _assert_allowed(spec_url, app.state.allowlist)
+    async def start_scan(request: Request) -> ScanAccepted:
+        """Queue a background scan. Live URL is allow-listed; spec-only is static."""
+        body = await _read_scan_create(request)
+        target, spec_url, spec_text = _prepare_scan_inputs(body, app.state.allowlist)
         try:
             dest = Path(app.state.db_path).parent if app.state.db_path else DEFAULT_DB_PATH.parent
             identities_file = resolve_identities_file(
@@ -79,8 +82,9 @@ def create_app(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         config = ScanConfig(
-            target=body.target_base_url.rstrip("/"),
+            target=target or SPEC_ONLY_TARGET,
             spec_url=spec_url,
+            spec_text=spec_text,
             allowlist=list(app.state.allowlist),
             safe_mode=body.safe_mode,
             identities_file=str(identities_file),
@@ -146,6 +150,8 @@ def create_app(
                 safe_mode=report.scan_config.safe_mode,
             )
         except PermissionError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.post("/scans/{scan_id}/findings/{finding_key}/explain", response_model=AIAnswer)
@@ -224,6 +230,83 @@ async def _run_scan(app: FastAPI, scan_id: int, config: ScanConfig) -> None:
         hub.emit(scan_id, 100, f"Scan failed: {exc}", status="failed")
 
 
+async def _read_scan_create(request: Request) -> ScanCreate:
+    """Accept JSON or multipart (spec file upload) on POST /scans."""
+    content_type = (request.headers.get("content-type") or "").lower()
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        spec_text = _form_str(form.get("spec_text"))
+        upload = form.get("spec_file") or form.get("spec")
+        if isinstance(upload, UploadFile):
+            raw = await upload.read()
+            try:
+                spec_text = raw.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Spec file must be UTF-8 OpenAPI/Swagger JSON or YAML.",
+                ) from exc
+        return ScanCreate(
+            target_base_url=_form_str(form.get("target_base_url")),
+            spec_url=_form_str(form.get("spec_url")),
+            spec_text=spec_text,
+            identities_preset=_form_str(form.get("identities_preset")) or "shopapi",
+            safe_mode=_form_bool(form.get("safe_mode"), default=True),
+        )
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Request body must be JSON or a spec file.") from exc
+    return ScanCreate.model_validate(payload)
+
+
+def _form_str(value: object) -> str | None:
+    if value is None or isinstance(value, UploadFile):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _form_bool(value: object, *, default: bool) -> bool:
+    if value is None or isinstance(value, UploadFile):
+        return default
+    return str(value).strip().lower() not in {"0", "false", "no"}
+
+
+def _prepare_scan_inputs(
+    body: ScanCreate,
+    allowlist: list[str],
+) -> tuple[str | None, str | None, str | None]:
+    spec_text = (body.spec_text or "").strip() or None
+    target = (body.target_base_url or "").strip().rstrip("/") or None
+    spec_url = (body.spec_url or "").strip() or None
+    if spec_text and len(spec_text) > SPEC_TEXT_MAX:
+        raise HTTPException(status_code=400, detail="Spec text is too large (max 1.5 MB).")
+    if not target and not spec_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide a live target URL or an OpenAPI/Swagger spec (file or pasted text).",
+        )
+    if spec_text:
+        try:
+            SpecParser().load_from_text(spec_text)
+        except SpecParseError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Could not parse OpenAPI/Swagger spec: {exc}",
+            ) from exc
+    if target:
+        _assert_allowed(target, allowlist)
+        if spec_text:
+            spec_url = None
+        else:
+            spec_url = spec_url or f"{target}/openapi.json"
+            _assert_allowed(spec_url, allowlist)
+    else:
+        spec_url = None
+    return target, spec_url, spec_text
+
+
 def _assert_allowed(url: str, allowlist: list[str]) -> None:
     if not url_is_allowed(url, allowlist):
         raise HTTPException(
@@ -274,6 +357,7 @@ def _detail(report: Report) -> ScanDetail:
         chains=report.chains,
         access_matrix=report.access_matrix,
         summary=report.summary,
+        skipped_checks=report.skipped_checks,
     )
 
 

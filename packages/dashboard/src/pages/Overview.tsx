@@ -133,6 +133,23 @@ export function OverviewPage() {
         </Card>
       </div>
 
+      {(current.skipped_checks ?? []).length > 0 ? (
+        <Card className="px-5 py-5">
+          <h2 className="text-[13px] font-semibold text-inktext">Checks not run</h2>
+          <p className="mt-1 text-xs text-inktext-faint">
+            Spec-only scan — live detectors need a reachable allow-listed target and identities.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {current.skipped_checks?.map((item) => (
+              <li key={item.check} className="text-sm">
+                <span className="text-inktext">{item.check}</span>
+                <span className="mt-0.5 block text-xs text-inktext-muted">{item.reason}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
       <section>
         <h2 className="text-[13px] font-semibold text-inktext">Findings by class</h2>
         <ul className="mt-3 space-y-3">

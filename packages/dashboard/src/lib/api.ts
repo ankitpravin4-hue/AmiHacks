@@ -81,6 +81,11 @@ export interface AttackChain {
   max_severity_label: string;
 }
 
+export interface SkippedCheck {
+  check: string;
+  reason: string;
+}
+
 export interface ScanDetail {
   id: number;
   target: string;
@@ -92,6 +97,7 @@ export interface ScanDetail {
   chains: AttackChain[];
   access_matrix: Record<string, Record<string, string>> | null;
   summary: SummaryStats;
+  skipped_checks?: SkippedCheck[];
 }
 
 export interface ScanAccepted {
@@ -167,8 +173,11 @@ export const api = {
   getFinding: (scanId: number, findingKey: string) =>
     request<Finding>(`/scans/${scanId}/findings/${encodeURIComponent(findingKey)}`),
 
-  startScan: (body: { target_base_url: string; identities_preset: string }) =>
-    request<ScanAccepted>("/scans", { method: "POST", body: JSON.stringify(body) }),
+  startScan: (body: {
+    target_base_url?: string;
+    spec_text?: string;
+    identities_preset: string;
+  }) => request<ScanAccepted>("/scans", { method: "POST", body: JSON.stringify(body) }),
 
   replay: (scanId: number, findingKey: string) =>
     request<ReplayResult>(

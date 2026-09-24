@@ -18,6 +18,7 @@ dependencies = [
   "sqlmodel>=0.0.22",
   "python-dotenv>=1.0.1",
   "google-generativeai>=0.8.0",
+  "python-multipart>=0.0.9",
 ]
 
 [project.scripts]
