@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import httpx
-import re
 
 from sentinel_core.detectors.helpers import (
     build_curl,
     fill_path,
+    is_auth_sensitive,
     is_success,
     join_url,
     path_is_filled,
@@ -17,9 +17,6 @@ from sentinel_core.detectors.helpers import (
 from sentinel_core.http_client import AllowlistDeniedError, SafeClient, UnsafeMethodError
 from sentinel_core.identity import IdentityProvider, object_type_from_param
 from sentinel_core.models import Endpoint, Finding
-
-_ADMIN_PATH = re.compile(r"/admin(?:/|$)", re.IGNORECASE)
-_PUBLIC_SAFE = frozenset({"/products", "/healthz", "/health", "/docs", "/redoc", "/openapi.json"})
 
 
 class AuthMisconfigDetector:
@@ -38,7 +35,7 @@ class AuthMisconfigDetector:
         sample_ids = _sample_ids(identities)
         findings: list[Finding] = []
         for endpoint in endpoints:
-            if not _is_sensitive(endpoint):
+            if not is_auth_sensitive(endpoint):
                 continue
             path = _fill_with_samples(endpoint, sample_ids)
             if path is None or not path_is_filled(path):
@@ -71,17 +68,10 @@ class AuthMisconfigDetector:
                         "Anyone on the network can open an internal admin page with "
                         "no login — store metrics and staff-only data are public."
                     ),
-                    detector_confidence=0.95 if _ADMIN_PATH.search(endpoint.path) else 0.85,
+                    detector_confidence=0.95 if "/admin" in endpoint.path.lower() else 0.85,
                 )
             )
         return findings
-
-
-def _is_sensitive(endpoint: Endpoint) -> bool:
-    path = endpoint.path.rstrip("/") or "/"
-    if path in _PUBLIC_SAFE or path.startswith("/products"):
-        return False
-    return endpoint.auth_required or bool(_ADMIN_PATH.search(endpoint.path))
 
 
 def _sample_ids(identities: IdentityProvider) -> dict[str, int | str]:

@@ -10,6 +10,7 @@ from sentinel_core.detectors import (
     RateLimitDetector,
     run_all_detectors,
 )
+from sentinel_core.ai import AgenticExploitAgent, LLMRemediationAdvisor
 from sentinel_core.engine import ScanEngine
 from sentinel_core.http_client import (
     AllowlistDeniedError,
@@ -33,6 +34,12 @@ from sentinel_core.models import (
 )
 from sentinel_core.scoring import SeverityScorer
 from sentinel_core.spec_parser import SpecParser
+from sentinel_core.strategies import (
+    HeuristicStrategy,
+    LLMTestStrategy,
+    TestCase,
+    TestStrategy,
+)
 from sentinel_core.storage import (
     get_finding,
     get_report,
@@ -42,6 +49,7 @@ from sentinel_core.storage import (
 )
 
 __all__ = [
+    "AgenticExploitAgent",
     "AllowlistDeniedError",
     "AttackChain",
     "AttackChainBuilder",
@@ -53,8 +61,11 @@ __all__ = [
     "Evidence",
     "ExcessiveDataExposureDetector",
     "Finding",
+    "HeuristicStrategy",
     "Identity",
     "IdentityProvider",
+    "LLMRemediationAdvisor",
+    "LLMTestStrategy",
     "MassAssignmentDetector",
     "RateLimitDetector",
     "Report",
@@ -67,6 +78,8 @@ __all__ = [
     "SeverityBreakdown",
     "SeverityScorer",
     "SpecParser",
+    "TestCase",
+    "TestStrategy",
     "SummaryStats",
     "UnsafeMethodError",
     "get_finding",

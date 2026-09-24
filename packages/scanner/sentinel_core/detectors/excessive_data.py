@@ -8,6 +8,7 @@ from sentinel_core.detectors.helpers import (
     build_curl,
     collect_sensitive_keys,
     fill_path,
+    is_public_ops,
     is_success,
     join_url,
     parse_json,
@@ -40,7 +41,7 @@ class ExcessiveDataExposureDetector:
         for endpoint in endpoints:
             if endpoint.method != "GET":
                 continue
-            if _is_public_ops(endpoint):
+            if is_public_ops(endpoint):
                 continue
             path = _own_path(endpoint, caller)
             if path is None or not path_is_filled(path):
@@ -89,11 +90,6 @@ def _first_customer(identities: IdentityProvider):
         if identity.headers and not identity.is_admin:
             return identity
     return None
-
-
-def _is_public_ops(endpoint: Endpoint) -> bool:
-    """Health/docs-style routes are not data-exposure targets."""
-    return endpoint.path.rstrip("/") in {"/healthz", "/health", "/docs", "/openapi.json", "/redoc"}
 
 
 def _own_path(endpoint: Endpoint, caller) -> str | None:

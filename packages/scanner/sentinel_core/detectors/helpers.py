@@ -9,6 +9,10 @@ from typing import Any
 from sentinel_core.http_client import SafeClient
 from sentinel_core.models import Endpoint, Evidence
 
+_ADMIN_PATH = re.compile(r"/admin(?:/|$)", re.IGNORECASE)
+_PUBLIC_OPS = frozenset({"/healthz", "/health", "/docs", "/openapi.json", "/redoc"})
+_PUBLIC_SAFE = frozenset({"/products", "/healthz", "/health", "/docs", "/redoc", "/openapi.json"})
+
 SENSITIVE_KEYS = frozenset(
     {
         "password",
@@ -158,3 +162,26 @@ def looks_like_login(endpoint: Endpoint) -> bool:
 def looks_like_update(endpoint: Endpoint) -> bool:
     """True for object-mutating operations used by mass assignment."""
     return endpoint.method in {"PATCH", "PUT"} and bool(endpoint.request_body_schema)
+
+
+def is_public_ops(endpoint: Endpoint) -> bool:
+    """Health/docs-style routes are not data-exposure targets."""
+    return endpoint.path.rstrip("/") in _PUBLIC_OPS
+
+
+def is_auth_sensitive(endpoint: Endpoint) -> bool:
+    """True for spec-protected or /admin routes that are not the public catalog."""
+    path = endpoint.path.rstrip("/") or "/"
+    if path in _PUBLIC_SAFE or path.startswith("/products"):
+        return False
+    return endpoint.auth_required or bool(_ADMIN_PATH.search(endpoint.path))
+
+
+def is_bola_probe(endpoint: Endpoint) -> bool:
+    """Same GET + object-id gate the BOLA detector uses."""
+    return endpoint.method == "GET" and endpoint.is_bola_candidate
+
+
+def privileged_body_fields(endpoint: Endpoint) -> set[str]:
+    """Privileged property names declared on an update body schema."""
+    return schema_property_names(endpoint.request_body_schema) & PRIVILEGED_FIELDS

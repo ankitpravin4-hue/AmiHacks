@@ -7,6 +7,7 @@ import httpx
 from sentinel_core.detectors.helpers import (
     build_curl,
     fill_path,
+    is_bola_probe,
     is_success,
     join_url,
     parse_json,
@@ -43,7 +44,7 @@ class BolaDetector:
         base = target_base(client)
 
         for endpoint in endpoints:
-            if endpoint.method != "GET" or not endpoint.is_bola_candidate:
+            if not is_bola_probe(endpoint):
                 continue
             leaked, matrix_row = await self._probe_endpoint(
                 endpoint, identities, client, base

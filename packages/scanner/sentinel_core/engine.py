@@ -15,6 +15,7 @@ from sentinel_core.models import Finding, Report, ScanConfig, SummaryStats
 from sentinel_core.scoring import SeverityScorer
 from sentinel_core.spec_parser import SpecParser
 from sentinel_core.storage import configure, get_report, save_report
+from sentinel_core.strategies import HeuristicStrategy, TestStrategy
 
 SCANNER_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_IDENTITIES = SCANNER_ROOT / "configs" / "shopapi.identities.yaml"
@@ -25,8 +26,13 @@ ProgressCallback = Callable[[int, str], None]
 class ScanEngine:
     """Run a full allow-listed scan and persist the report."""
 
-    def __init__(self, db_path: Path | str | None = None) -> None:
+    def __init__(
+        self,
+        db_path: Path | str | None = None,
+        strategy: TestStrategy | None = None,
+    ) -> None:
         configure(db_path)
+        self.strategy: TestStrategy = strategy or HeuristicStrategy()
 
     async def run(
         self,
@@ -54,6 +60,13 @@ class ScanEngine:
         identities_path = Path(config.identities_file or DEFAULT_IDENTITIES)
         identities = IdentityProvider.from_file(identities_path)
         _emit(on_progress, 20, f"Loaded {len(identities.all())} identities")
+
+        planned = sum(len(self.strategy.generate_test_cases(item)) for item in endpoints)
+        _emit(
+            on_progress,
+            22,
+            f"{self.strategy.name} strategy planned {planned} test cases",
+        )
 
         _emit(on_progress, 25, "Running detectors")
         async with SafeClient(

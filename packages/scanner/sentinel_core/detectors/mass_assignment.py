@@ -5,7 +5,6 @@ from __future__ import annotations
 import httpx
 
 from sentinel_core.detectors.helpers import (
-    PRIVILEGED_FIELDS,
     build_curl,
     fill_path,
     is_success,
@@ -13,7 +12,7 @@ from sentinel_core.detectors.helpers import (
     looks_like_update,
     parse_json,
     path_is_filled,
-    schema_property_names,
+    privileged_body_fields,
     slug,
     target_base,
 )
@@ -49,7 +48,7 @@ class MassAssignmentDetector:
                 continue
             if client.safe_mode and endpoint.method.upper() in DESTRUCTIVE_METHODS:
                 continue
-            privileged = schema_property_names(endpoint.request_body_schema) & PRIVILEGED_FIELDS
+            privileged = privileged_body_fields(endpoint)
             if not privileged:
                 continue
             path = _own_path(endpoint, caller)
