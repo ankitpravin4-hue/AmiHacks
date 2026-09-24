@@ -9,6 +9,7 @@ import {
   Table2,
 } from "lucide-react";
 import { useScans } from "@/context/ScanContext";
+import { LogoMark } from "@/components/LogoMark";
 import { StatusChip } from "@/components/StatusChip";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +46,8 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-ink-900">
-        <div className="px-5 pb-2 pt-5">
+        <div className="flex items-center gap-2 px-5 pb-2 pt-5">
+          <LogoMark className="h-7 w-7 shrink-0 text-inktext" />
           <p className="text-[15px] font-semibold tracking-tight text-inktext">SentinelAPI</p>
         </div>
         <div className="px-3 pb-4">
