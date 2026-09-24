@@ -87,30 +87,28 @@ export function NewScanPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <p className="text-xs uppercase tracking-[0.25em] text-sky-400">Launch</p>
-      <h1 className="mt-2 text-3xl font-semibold">New scan</h1>
-      <p className="mt-2 text-sm text-slate-400">
-        Paste an allow-listed base URL. The scanner refuses anything else.
-      </p>
+      <p className="text-2xs font-medium uppercase tracking-[0.16em] text-inktext-faint">New scan</p>
+      <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-inktext">Target</h1>
+      <p className="mt-1 text-sm text-inktext-muted">Allow-listed base URL only.</p>
       <Card className="mt-8">
-        <CardHeader title="Target" subtitle="ShopAPI demo is pre-filled." />
+        <CardHeader title="Scan" />
         <form onSubmit={onSubmit} className="space-y-5 px-5 py-5">
           <label className="block text-sm">
-            <span className="mb-1.5 block text-slate-400">Target base URL</span>
+            <span className="mb-1.5 block text-inktext-muted">Target base URL</span>
             <input
               value={target}
               onChange={(event) => setTarget(event.target.value)}
-              className="w-full rounded-md border border-line bg-ink-800 px-3 py-2 font-mono text-sm outline-none ring-sky-500/40 focus:ring-2"
+              className="w-full rounded-[8px] border border-line bg-ink-900 px-3 py-2 font-mono text-sm text-inktext outline-none ring-accent/30 focus:ring-2"
               placeholder="http://127.0.0.1:8000"
               required
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1.5 block text-slate-400">Identities</span>
+            <span className="mb-1.5 block text-inktext-muted">Identities</span>
             <select
               value={preset}
               onChange={(event) => setPreset(event.target.value)}
-              className="w-full rounded-md border border-line bg-ink-800 px-3 py-2 text-sm outline-none ring-sky-500/40 focus:ring-2"
+              className="w-full rounded-[8px] border border-line bg-ink-900 px-3 py-2 text-sm text-inktext outline-none ring-accent/30 focus:ring-2"
             >
               <option value="shopapi">shopapi — alice / bob / admin / anonymous</option>
             </select>
@@ -122,13 +120,13 @@ export function NewScanPage() {
           ) : null}
           {progress ? (
             <div>
-              <div className="mb-2 flex justify-between font-mono text-xs text-slate-400">
+              <div className="mb-2 flex justify-between font-mono text-xs text-inktext-muted">
                 <span>{progress.step}</span>
-                <span>{progress.percent}%</span>
+                <span className="tabular">{progress.percent}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-ink-800">
+              <div className="h-1.5 overflow-hidden rounded-full bg-ink-700">
                 <div
-                  className="h-full bg-gradient-to-r from-sky-500 to-cyan-300 transition-all duration-300"
+                  className="h-full bg-accent transition-all duration-150"
                   style={{ width: `${progress.percent}%` }}
                 />
               </div>

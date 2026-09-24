@@ -35,8 +35,8 @@ export function ChainsPage() {
             findingId,
           },
           style: {
-            background: "#111827",
-            color: "#e2e8f0",
+            background: "#1e222b",
+            color: "#eceef2",
             border: `1px solid ${severityColor(finding?.severity_label ?? "Low")}`,
             borderRadius: 10,
             padding: 10,
@@ -51,7 +51,7 @@ export function ChainsPage() {
             source: `${chain.id}:${prev}`,
             target: `${chain.id}:${findingId}`,
             animated: true,
-            style: { stroke: "#38bdf8" },
+            style: { stroke: "#6b8cff" },
           });
         }
       });
@@ -69,10 +69,10 @@ export function ChainsPage() {
   const active = current.chains.find((chain) => chain.id === selected) ?? current.chains[0];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-sky-400">Attack chains</p>
-        <h1 className="mt-2 text-3xl font-semibold">How findings combine</h1>
+        <p className="text-2xs font-medium uppercase tracking-[0.16em] text-inktext-faint">Attack chains</p>
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-inktext">Attack chains</h1>
       </div>
       <div className="flex flex-wrap gap-2">
         {current.chains.map((chain) => (
@@ -80,7 +80,7 @@ export function ChainsPage() {
             key={chain.id}
             type="button"
             onClick={() => setSelected(chain.id)}
-            className="rounded-md border border-line bg-ink-800 px-3 py-1.5 text-sm hover:border-sky-500/40"
+            className="rounded-[8px] border border-line bg-ink-800 px-3 py-1.5 text-sm text-inktext transition-colors duration-150 hover:border-accent/40"
           >
             {chainTitle(chain.id)}
           </button>
@@ -95,9 +95,9 @@ export function ChainsPage() {
           <p className="px-5 py-4 text-sm text-slate-300">{active.narrative}</p>
         </Card>
       ) : null}
-      <div className="h-[420px] overflow-hidden rounded-xl border border-line bg-ink-900">
+      <div className="h-[420px] overflow-hidden rounded-card border border-line bg-ink-800">
         {nodes.length === 0 ? (
-          <p className="p-8 text-sm text-slate-500">No chained findings in this scan.</p>
+          <p className="p-8 text-sm text-inktext-faint">No chained findings in this scan.</p>
         ) : (
           <ReactFlowProvider>
             <ReactFlow
@@ -109,7 +109,7 @@ export function ChainsPage() {
                 navigate(`/findings/${encodeURIComponent(findingId)}`);
               }}
             >
-              <Background color="#1e2a3a" gap={18} />
+              <Background color="#2d3340" gap={18} />
               <Controls />
             </ReactFlow>
           </ReactFlowProvider>

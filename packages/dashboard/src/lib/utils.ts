@@ -12,8 +12,16 @@ export function formatWhen(value: string | null | undefined): string {
   return date.toLocaleString();
 }
 
+const CLASS_LABELS: Record<string, string> = {
+  bola: "BOLA",
+  excessive_data_exposure: "Excessive Data Exposure",
+  broken_authentication: "Broken Authentication",
+  missing_rate_limit: "Missing Rate Limit",
+  mass_assignment: "Mass Assignment",
+};
+
 export function prettyClass(vulnClass: string): string {
-  return vulnClass.replaceAll("_", " ");
+  return CLASS_LABELS[vulnClass] ?? vulnClass.replaceAll("_", " ");
 }
 
 export function chainTitle(chainId: string): string {

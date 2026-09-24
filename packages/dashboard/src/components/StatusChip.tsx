@@ -3,14 +3,14 @@ import { cn } from "@/lib/utils";
 export function StatusChip({ status }: { status: string }) {
   const tone =
     status === "completed"
-      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+      ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
       : status === "running"
-        ? "bg-sky-500/15 text-sky-300 border-sky-500/30"
+        ? "bg-accent/10 text-accent border-accent/25"
         : status === "failed"
-          ? "bg-critical/15 text-critical border-critical/30"
-          : "bg-slate-500/15 text-slate-300 border-slate-500/30";
+          ? "bg-critical/10 text-critical border-critical/25"
+          : "bg-ink-700 text-inktext-muted border-line";
   return (
-    <span className={cn("rounded-full border px-2 py-0.5 text-[11px] font-medium uppercase", tone)}>
+    <span className={cn("rounded-full border px-2 py-0.5 text-2xs font-medium uppercase tracking-wide", tone)}>
       {status}
     </span>
   );

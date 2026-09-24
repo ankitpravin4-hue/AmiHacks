@@ -4,6 +4,19 @@
 
 :root {
   color-scheme: dark;
+  --bg: #12141a;
+  --bg-elevated: #1e222b;
+  --bg-sidebar: #181b22;
+  --border: #2d3340;
+  --text: #eceef2;
+  --text-muted: #9aa3b2;
+  --accent: #6b8cff;
+  --critical: #e5484d;
+  --high: #e67a2e;
+  --medium: #d4a017;
+  --low: #8b93a7;
+  --radius: 10px;
+  --space: 8px;
 }
 
 html,
@@ -13,16 +26,26 @@ body,
 }
 
 body {
-  background: radial-gradient(1200px 600px at 10% -10%, rgba(14, 165, 233, 0.08), transparent 50%),
-    radial-gradient(900px 500px at 110% 10%, rgba(244, 63, 94, 0.05), transparent 45%),
-    #07090d;
+  background: var(--bg);
+  color: var(--text);
+  font-feature-settings: "tnum" 1, "ss01" 1;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1e2a3a transparent;
+  scrollbar-color: #2d3340 transparent;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 .react-flow__attribution {
   display: none;
+}
+
+.react-flow__controls-button {
+  background: #1e222b;
+  border-bottom-color: #2d3340;
+  fill: #9aa3b2;
 }

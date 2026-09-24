@@ -31,21 +31,21 @@ export function HistoryPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-sky-400">History</p>
-        <h1 className="mt-2 text-3xl font-semibold">Scan history / diff</h1>
+        <p className="text-2xs font-medium uppercase tracking-[0.16em] text-inktext-faint">History</p>
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-inktext">History / Diff</h1>
       </div>
       <Card>
-        <CardHeader title="Past scans" subtitle="Click a row to make it the current report" />
+        <CardHeader title="Past scans" />
         <table className="w-full text-sm">
-          <thead className="border-b border-line text-xs uppercase text-slate-500">
+          <thead className="border-b border-line text-2xs uppercase text-inktext-faint">
             <tr>
-              <th className="px-4 py-2 text-left">ID</th>
-              <th className="px-4 py-2 text-left">Target</th>
-              <th className="px-4 py-2 text-left">Started</th>
-              <th className="px-4 py-2 text-left">Status</th>
-              <th className="px-4 py-2 text-left">Findings</th>
+              <th className="px-4 py-2 text-left font-medium">ID</th>
+              <th className="px-4 py-2 text-left font-medium">Target</th>
+              <th className="px-4 py-2 text-left font-medium">Started</th>
+              <th className="px-4 py-2 text-left font-medium">Status</th>
+              <th className="px-4 py-2 text-left font-medium">Findings</th>
             </tr>
           </thead>
           <tbody>
@@ -53,15 +53,15 @@ export function HistoryPage() {
               <tr
                 key={scan.id}
                 onClick={() => setCurrentId(scan.id)}
-                className="cursor-pointer border-b border-line/70 hover:bg-white/5"
+                className="cursor-pointer border-b border-line/70 transition-colors duration-150 hover:bg-white/[0.03]"
               >
-                <td className="px-4 py-3 font-mono">{scan.id}</td>
-                <td className="px-4 py-3 font-mono text-slate-300">{scan.target}</td>
-                <td className="px-4 py-3 text-slate-400">{formatWhen(scan.started_at)}</td>
+                <td className="tabular px-4 py-3 font-mono text-[13px]">{scan.id}</td>
+                <td className="px-4 py-3 font-mono text-[12px] text-inktext">{scan.target}</td>
+                <td className="px-4 py-3 text-inktext-muted">{formatWhen(scan.started_at)}</td>
                 <td className="px-4 py-3">
                   <StatusChip status={scan.status} />
                 </td>
-                <td className="px-4 py-3 font-mono">{scan.summary.total_findings}</td>
+                <td className="tabular px-4 py-3 font-mono text-[13px]">{scan.summary.total_findings}</td>
               </tr>
             ))}
           </tbody>
@@ -69,14 +69,14 @@ export function HistoryPage() {
       </Card>
 
       <Card>
-        <CardHeader title="Compare two scans" subtitle="new / fixed / persisting by finding key" />
+        <CardHeader title="Compare two scans" />
         <div className="flex flex-wrap items-end gap-3 px-5 py-4">
           <label className="text-sm">
-            <span className="mb-1 block text-slate-400">Scan A</span>
+            <span className="mb-1 block text-inktext-muted">Scan A</span>
             <select
               value={a}
               onChange={(event) => setA(event.target.value ? Number(event.target.value) : "")}
-              className="rounded-md border border-line bg-ink-800 px-3 py-2"
+              className="rounded-[8px] border border-line bg-ink-900 px-3 py-2 text-inktext"
             >
               <option value="">Select</option>
               {scans.map((scan) => (
@@ -87,11 +87,11 @@ export function HistoryPage() {
             </select>
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-slate-400">Scan B</span>
+            <span className="mb-1 block text-inktext-muted">Scan B</span>
             <select
               value={b}
               onChange={(event) => setB(event.target.value ? Number(event.target.value) : "")}
-              className="rounded-md border border-line bg-ink-800 px-3 py-2"
+              className="rounded-[8px] border border-line bg-ink-900 px-3 py-2 text-inktext"
             >
               <option value="">Select</option>
               {scans.map((scan) => (

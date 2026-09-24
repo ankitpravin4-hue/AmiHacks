@@ -22,26 +22,24 @@ export function MatrixPage() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-sky-400">Identity matrix</p>
-        <h1 className="mt-2 text-3xl font-semibold">Who can reach whose objects</h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Green is correctly denied. Red is leaked access — the BOLA proof.
-        </p>
+        <p className="text-2xs font-medium uppercase tracking-[0.16em] text-inktext-faint">Access matrix</p>
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-inktext">Access matrix</h1>
+        <p className="mt-1 text-sm text-inktext-muted">Green = denied. Red = leaked.</p>
       </div>
       {endpoints.length === 0 ? (
-        <p className="text-sm text-slate-500">This scan did not emit an access matrix.</p>
+        <p className="text-sm text-inktext-faint">This scan did not emit an access matrix.</p>
       ) : (
         <Card>
-          <CardHeader title="Cross-access results" subtitle="Identity × object endpoint" />
+          <CardHeader title="Identity × endpoint" />
           <div className="overflow-auto px-4 py-4">
             <table className="min-w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs uppercase text-slate-500">Endpoint</th>
+                    <th className="px-3 py-2 text-left text-2xs uppercase text-inktext-faint">Endpoint</th>
                   {identities.map((name) => (
-                    <th key={name} className="px-3 py-2 text-center font-mono text-xs text-slate-400">
+                    <th key={name} className="px-3 py-2 text-center font-mono text-2xs text-inktext-muted">
                       {name}
                     </th>
                   ))}
@@ -50,7 +48,7 @@ export function MatrixPage() {
               <tbody>
                 {endpoints.map((endpoint) => (
                   <tr key={endpoint} className="border-t border-line">
-                    <td className="px-3 py-3 font-mono text-xs text-slate-300">{endpoint}</td>
+                    <td className="px-3 py-3 font-mono text-[12px] text-inktext">{endpoint}</td>
                     {identities.map((name) => {
                       const value = matrix[endpoint]?.[name];
                       const leaked = value === "allowed";

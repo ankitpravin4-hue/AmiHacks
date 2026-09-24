@@ -33,16 +33,16 @@ export function FindingsPage() {
   const classes = [...new Set(current.findings.map((item) => item.vuln_class))];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-sky-400">Findings</p>
-        <h1 className="mt-2 text-3xl font-semibold">Severity-ranked issues</h1>
+        <p className="text-2xs font-medium uppercase tracking-[0.16em] text-inktext-faint">Findings</p>
+        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-inktext">Findings</h1>
       </div>
       <div className="flex flex-wrap gap-3">
         <select
           value={severity}
           onChange={(event) => setSeverity(event.target.value)}
-          className="rounded-md border border-line bg-ink-800 px-3 py-2 text-sm"
+          className="rounded-[8px] border border-line bg-ink-800 px-3 py-2 text-sm text-inktext"
         >
           <option value="all">All severities</option>
           {["Critical", "High", "Medium", "Low"].map((label) => (
@@ -54,7 +54,7 @@ export function FindingsPage() {
         <select
           value={klass}
           onChange={(event) => setKlass(event.target.value)}
-          className="rounded-md border border-line bg-ink-800 px-3 py-2 text-sm"
+          className="rounded-[8px] border border-line bg-ink-800 px-3 py-2 text-sm text-inktext"
         >
           <option value="all">All classes</option>
           {classes.map((name) => (
@@ -63,7 +63,7 @@ export function FindingsPage() {
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-2 text-xs text-slate-400">
+        <label className="flex items-center gap-2 text-xs text-inktext-muted">
           Confidence ≥ {minConfidence.toFixed(2)}
           <input
             type="range"
@@ -77,13 +77,13 @@ export function FindingsPage() {
       </div>
       <Card>
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-line text-xs uppercase tracking-wide text-slate-500">
+          <thead className="border-b border-line text-2xs uppercase tracking-wide text-inktext-faint">
             <tr>
-              <th className="px-4 py-3">Severity</th>
-              <th className="px-4 py-3">Score</th>
-              <th className="px-4 py-3">Class</th>
-              <th className="px-4 py-3">Endpoint</th>
-              <th className="px-4 py-3">Confidence</th>
+              <th className="px-4 py-3 font-medium">Severity</th>
+              <th className="px-4 py-3 font-medium">Score</th>
+              <th className="px-4 py-3 font-medium">Class</th>
+              <th className="px-4 py-3 font-medium">Endpoint</th>
+              <th className="px-4 py-3 font-medium">Confidence</th>
             </tr>
           </thead>
           <tbody>
@@ -91,15 +91,15 @@ export function FindingsPage() {
               <tr
                 key={finding.id}
                 onClick={() => navigate(`/findings/${encodeURIComponent(finding.id)}`)}
-                className="cursor-pointer border-b border-line/70 transition hover:bg-white/5"
+                className="cursor-pointer border-b border-line/70 transition-colors duration-150 hover:bg-white/[0.03]"
               >
                 <td className="px-4 py-3">
                   <SeverityBadge label={finding.severity_label} />
                 </td>
-                <td className="px-4 py-3 font-mono">{finding.severity_score.toFixed(1)}</td>
-                <td className="px-4 py-3 capitalize">{prettyClass(finding.vuln_class)}</td>
-                <td className="px-4 py-3 font-mono text-slate-300">{finding.endpoint}</td>
-                <td className="px-4 py-3 font-mono">{finding.confidence.toFixed(2)}</td>
+                <td className="tabular px-4 py-3 font-mono text-[13px]">{finding.severity_score.toFixed(1)}</td>
+                <td className="px-4 py-3 text-inktext-muted">{prettyClass(finding.vuln_class)}</td>
+                <td className="px-4 py-3 font-mono text-[12px] text-inktext">{finding.endpoint}</td>
+                <td className="tabular px-4 py-3 font-mono text-[13px]">{finding.confidence.toFixed(2)}</td>
               </tr>
             ))}
             {rows.length === 0 ? (

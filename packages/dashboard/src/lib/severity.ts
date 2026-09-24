@@ -10,13 +10,13 @@ export const SEVERITY_ORDER: Record<string, number> = {
 export function severityColor(label: SeverityLabel): string {
   switch (label) {
     case "Critical":
-      return "#f43f5e";
+      return "#e5484d";
     case "High":
-      return "#f97316";
+      return "#e67a2e";
     case "Medium":
-      return "#f59e0b";
+      return "#d4a017";
     default:
-      return "#94a3b8";
+      return "#8b93a7";
   }
 }
 
