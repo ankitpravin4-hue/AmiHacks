@@ -9,6 +9,7 @@ import {
   Table2,
 } from "lucide-react";
 import { useScans } from "@/context/ScanContext";
+import { DownloadReportButton } from "@/components/DownloadReportButton";
 import { LogoMark } from "@/components/LogoMark";
 import { StatusChip } from "@/components/StatusChip";
 import { cn } from "@/lib/utils";
@@ -106,6 +107,7 @@ export function AppShell() {
                   {current.target}
                 </span>
                 <StatusChip status={current.status} />
+                <DownloadReportButton scan={current} />
               </>
             ) : (
               <span className="text-inktext-faint">No target selected</span>

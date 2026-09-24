@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { DownloadReportButton } from "@/components/DownloadReportButton";
 import { EmptyState, ErrorState, LoadingState } from "@/components/EmptyState";
 import { Card } from "@/components/ui/card";
 import { SeverityBadge } from "@/components/ui/badge";
@@ -34,12 +35,17 @@ export function OverviewPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="text-2xs font-medium uppercase tracking-[0.16em] text-inktext-faint">
-          Executive overview
-        </p>
-        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-inktext">Risk score</h1>
-        <p className="mt-1 text-sm text-inktext-muted">Highest finding on this scan.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-2xs font-medium uppercase tracking-[0.16em] text-inktext-faint">
+            Executive overview
+          </p>
+          <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-inktext">Risk score</h1>
+          <p className="mt-1 text-sm text-inktext-muted">
+            Highest finding on this scan. Download an advisory HTML report you can print to PDF.
+          </p>
+        </div>
+        <DownloadReportButton scan={current} variant="default" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-12">
