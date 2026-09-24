@@ -18,6 +18,10 @@ class Endpoint(BaseModel):
         default_factory=list,
         description="Path params named `id` or `*_id` — BOLA candidates.",
     )
+    query_params: list[str] = Field(
+        default_factory=list,
+        description="String query parameter names (SQLi probe candidates).",
+    )
     request_body_schema: dict[str, Any] | None = None
     response_schema: dict[str, Any] | None = None
     auth_required: bool = False

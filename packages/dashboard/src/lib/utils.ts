@@ -19,6 +19,7 @@ const CLASS_LABELS: Record<string, string> = {
   missing_rate_limit: "Missing Rate Limit",
   mass_assignment: "Mass Assignment",
   missing_security: "Missing Security",
+  sql_injection: "SQL Injection",
 };
 
 export function prettyClass(vulnClass: string): string {

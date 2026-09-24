@@ -8,6 +8,7 @@ from sentinel_core.detectors import (
     ExcessiveDataExposureDetector,
     MassAssignmentDetector,
     RateLimitDetector,
+    SqlInjectionDetector,
     run_all_detectors,
 )
 from sentinel_core.ai import AgenticExploitAgent, LLMRemediationAdvisor
@@ -68,6 +69,7 @@ __all__ = [
     "LLMTestStrategy",
     "MassAssignmentDetector",
     "RateLimitDetector",
+    "SqlInjectionDetector",
     "Report",
     "RequestEvidence",
     "ResponseEvidence",

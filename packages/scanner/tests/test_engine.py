@@ -1,4 +1,4 @@
-"""Full engine run: 6 findings, expected severity bands, chains, SQLite round-trip."""
+"""Full engine run: 7 findings, expected severity bands, chains, SQLite round-trip."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ HIGH_CLASSES = {
     "broken_authentication",
     "mass_assignment",
     "excessive_data_exposure",
+    "sql_injection",
 }
 
 
@@ -36,7 +37,7 @@ pytestmark = pytest.mark.skipif(not _shopapi_up(), reason="ShopAPI is not runnin
 
 @pytest.mark.asyncio
 async def test_engine_scores_chains_and_round_trips(tmp_path: Path) -> None:
-    """Live ShopAPI scan must score 6 findings, build both chains, and persist."""
+    """Live ShopAPI scan must score 7 findings, build both chains, and persist."""
     engine = ScanEngine(db_path=tmp_path / "sentinel.db")
     progress: list[tuple[int, str]] = []
     report = await engine.run(
@@ -51,7 +52,7 @@ async def test_engine_scores_chains_and_round_trips(tmp_path: Path) -> None:
     )
 
     assert report.id is not None
-    assert len(report.findings) == 6
+    assert len(report.findings) == 7
     assert progress and progress[-1][0] == 100
 
     endpoints = {item.endpoint for item in report.findings}
@@ -60,6 +61,7 @@ async def test_engine_scores_chains_and_round_trips(tmp_path: Path) -> None:
     assert "GET /admin/stats" in endpoints
     assert "POST /login" in endpoints
     assert "PATCH /users/{user_id}" in endpoints
+    assert "GET /products/search" in endpoints
 
     for finding in report.findings:
         assert finding.severity_breakdown is not None
@@ -86,6 +88,7 @@ async def test_engine_scores_chains_and_round_trips(tmp_path: Path) -> None:
     standalone_keys = {(item.vuln_class, item.endpoint) for item in standalone}
     assert ("bola", "GET /orders/{order_id}") in standalone_keys
     assert ("missing_rate_limit", "POST /login") in standalone_keys
+    assert ("sql_injection", "GET /products/search") in standalone_keys
 
     loaded = get_report(report.id)
     assert loaded is not None

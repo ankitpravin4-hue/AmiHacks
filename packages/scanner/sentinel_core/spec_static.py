@@ -27,6 +27,10 @@ LIVE_ONLY_CHECKS: tuple[SkippedCheck, ...] = (
         check="Mass Assignment",
         reason="Requires a live allow-listed target to PATCH a privileged field.",
     ),
+    SkippedCheck(
+        check="SQL Injection",
+        reason="Requires a live allow-listed target to compare baseline vs probe responses.",
+    ),
 )
 
 SPEC_ONLY_TARGET = "spec-only"

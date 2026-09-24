@@ -78,7 +78,7 @@ def test_agentic_exploit_agent_is_stub() -> None:
 @pytest.mark.skipif(not _shopapi_up(), reason="ShopAPI is not running on :8000")
 @pytest.mark.asyncio
 async def test_heuristic_strategy_same_shopapi_result(tmp_path: Path) -> None:
-    """Explicit HeuristicStrategy() must still yield 6 findings and both chains."""
+    """Explicit HeuristicStrategy() must still yield 7 findings and both chains."""
     engine = ScanEngine(
         db_path=tmp_path / "sentinel.db",
         strategy=HeuristicStrategy(),
@@ -93,7 +93,7 @@ async def test_heuristic_strategy_same_shopapi_result(tmp_path: Path) -> None:
         )
     )
     assert engine.strategy.name == "heuristic"
-    assert len(report.findings) == 6
+    assert len(report.findings) == 7
     assert {chain.id for chain in report.chains} == {
         "account-takeover",
         "cross-user-data-theft",

@@ -27,7 +27,7 @@ pytestmark = pytest.mark.skipif(not _shopapi_up(), reason="ShopAPI is not runnin
 
 @pytest.mark.asyncio
 async def test_service_scan_report_replay_and_allowlist(tmp_path: Path) -> None:
-    """POST starts a scan, report has 6 findings, BOLA replay still works, foreign hosts 400."""
+    """POST starts a scan, report has 7 findings, BOLA replay still works, foreign hosts 400."""
     app = create_app(db_path=tmp_path / "service.db", allowlist=[BASE])
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -54,7 +54,7 @@ async def test_service_scan_report_replay_and_allowlist(tmp_path: Path) -> None:
 
         report = await _wait_for_completion(client, scan_id)
         assert report["status"] == "completed"
-        assert len(report["findings"]) == 6
+        assert len(report["findings"]) == 7
         assert report["access_matrix"]
         assert len(report["chains"]) == 2
 

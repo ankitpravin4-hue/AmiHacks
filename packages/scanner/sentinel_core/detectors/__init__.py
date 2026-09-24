@@ -8,19 +8,21 @@ from sentinel_core.detectors.bola import BolaDetector
 from sentinel_core.detectors.excessive_data import ExcessiveDataExposureDetector
 from sentinel_core.detectors.mass_assignment import MassAssignmentDetector
 from sentinel_core.detectors.rate_limit import RateLimitDetector
+from sentinel_core.detectors.sql_injection import SqlInjectionDetector
 from sentinel_core.http_client import SafeClient
 from sentinel_core.identity import IdentityProvider
 from sentinel_core.models import Endpoint, Finding
 
 
 def default_detectors() -> list[Detector]:
-    """The five Phase 3 detectors, in demo order."""
+    """Rule-based detectors, in demo order."""
     return [
         BolaDetector(),
         ExcessiveDataExposureDetector(),
         AuthMisconfigDetector(),
         RateLimitDetector(),
         MassAssignmentDetector(),
+        SqlInjectionDetector(),
     ]
 
 
@@ -44,6 +46,7 @@ __all__ = [
     "ExcessiveDataExposureDetector",
     "MassAssignmentDetector",
     "RateLimitDetector",
+    "SqlInjectionDetector",
     "default_detectors",
     "run_all_detectors",
 ]

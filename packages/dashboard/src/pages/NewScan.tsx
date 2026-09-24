@@ -16,6 +16,7 @@ const VULN_CHIPS = [
   { label: "Excessive Data Exposure", needsLive: false },
   { label: "Auth Issues", needsLive: false },
   { label: "Rate Limiting", needsLive: true },
+  { label: "SQL Injection", needsLive: true },
 ] as const;
 
 function fileExtension(name: string): string {

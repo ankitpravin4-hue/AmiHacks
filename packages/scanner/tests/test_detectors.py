@@ -7,7 +7,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from sentinel_core.detectors import BolaDetector, run_all_detectors
+from sentinel_core.detectors import BolaDetector, SqlInjectionDetector, run_all_detectors
 from sentinel_core.http_client import SafeClient
 from sentinel_core.identity import IdentityProvider
 from sentinel_core.spec_parser import SpecParser
@@ -89,3 +89,23 @@ async def test_seeded_flaws_are_caught() -> None:
     assert "mass_assignment" in by_class
     assert by_class["mass_assignment"].endpoint == "PATCH /users/{user_id}"
     assert any(item.endpoint == "GET /users/{user_id}" and item.vuln_class == "bola" for item in findings)
+    assert "sql_injection" in by_class
+    assert by_class["sql_injection"].endpoint == "GET /products/search"
+
+
+@pytest.mark.asyncio
+async def test_sql_injection_flags_search_not_safe_routes() -> None:
+    """GET /products/search is SQLi; catalog, scoped orders, and healthz stay clean."""
+    endpoints = SpecParser().load_from_url(f"{BASE}/openapi.json", allowed_base_urls=[BASE])
+    async with SafeClient(allowed_base_urls=[BASE]) as client:
+        findings = await SqlInjectionDetector().run(endpoints, _identities(), client)
+
+    assert findings, "SqlInjectionDetector missed GET /products/search"
+    assert all(item.vuln_class == "sql_injection" for item in findings)
+    flagged = {item.endpoint for item in findings}
+    assert "GET /products/search" in flagged
+    assert not (flagged & SAFE_ENDPOINTS)
+    finding = next(item for item in findings if item.endpoint == "GET /products/search")
+    assert finding.evidence
+    assert "q=" in finding.poc_curl
+    assert "parameterized" in finding.remediation.lower() or "prepared" in finding.remediation.lower()

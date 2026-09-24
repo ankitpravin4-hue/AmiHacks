@@ -68,6 +68,21 @@ def _iter_parameters(
     return merged
 
 
+def _string_query_param_names(parameters: Sequence[dict[str, Any]]) -> list[str]:
+    """Query parameters whose schema is string (or untyped — OpenAPI default)."""
+    names: list[str] = []
+    for param in parameters:
+        if param.get("in") != "query" or not param.get("name"):
+            continue
+        schema = param.get("schema")
+        ptype = schema.get("type") if isinstance(schema, dict) else None
+        if ptype in {None, "string"}:
+            name = str(param["name"])
+            if name not in names:
+                names.append(name)
+    return names
+
+
 def _path_param_names(path: str, parameters: Sequence[dict[str, Any]]) -> list[str]:
     """Declared path params, falling back to ``{name}`` segments in the template."""
     names: list[str] = []
@@ -183,6 +198,7 @@ class SpecParser:
                         path=str(path),
                         path_params=path_params,
                         object_id_params=[name for name in path_params if is_object_id_param(name)],
+                        query_params=_string_query_param_names(parameters),
                         request_body_schema=_request_body_schema(operation, spec),
                         response_schema=_response_schema(operation, spec),
                         auth_required=_auth_required(operation, spec),

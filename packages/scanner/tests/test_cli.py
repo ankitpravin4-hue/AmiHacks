@@ -80,7 +80,7 @@ def test_fail_on_critical_exits_0() -> None:
 
 
 @pytest.mark.skipif(not _shopapi_up(), reason="ShopAPI is not running on :8000")
-def test_sarif_is_valid_with_six_results(tmp_path: Path) -> None:
+def test_sarif_is_valid_with_seven_results(tmp_path: Path) -> None:
     """SARIF 2.1.0 JSON with one result per ShopAPI finding."""
     dest = tmp_path / "results.sarif"
     result = runner.invoke(
@@ -103,13 +103,14 @@ def test_sarif_is_valid_with_six_results(tmp_path: Path) -> None:
     document = json.loads(dest.read_text(encoding="utf-8"))
     validate_sarif(document)
     results = document["runs"][0]["results"]
-    assert len(results) == 6
+    assert len(results) == 7
     assert {item["ruleId"] for item in results} >= {
         "bola",
         "broken_authentication",
         "excessive_data_exposure",
         "missing_rate_limit",
         "mass_assignment",
+        "sql_injection",
     }
     for item in results:
         assert "endpoint" in item["properties"]

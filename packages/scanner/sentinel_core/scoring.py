@@ -110,6 +110,13 @@ class SeverityScorer:
                 max_score=3.5,
                 reason="Privileged identity fields are writable by the client.",
             )
+        if vuln == "sql_injection":
+            return ScoreFactor(
+                name="data_sensitivity",
+                score=3.0,
+                max_score=3.5,
+                reason="Unfiltered SELECT returns every row the query can see.",
+            )
         if vuln == "missing_rate_limit":
             return ScoreFactor(
                 name="data_sensitivity",
@@ -154,6 +161,13 @@ class SeverityScorer:
                 score=1.3,
                 max_score=2.5,
                 reason="Caller learns admin flags and credential material.",
+            )
+        if vuln == "sql_injection":
+            return ScoreFactor(
+                name="privilege_gained",
+                score=1.8,
+                max_score=2.5,
+                reason="Caller bypasses the intended filter and reads the full result set.",
             )
         if vuln == "missing_rate_limit":
             return ScoreFactor(
