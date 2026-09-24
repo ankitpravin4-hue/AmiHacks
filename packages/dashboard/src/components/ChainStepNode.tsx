@@ -1,16 +1,19 @@
 import { Handle, Position, type NodeProps } from "reactflow";
-import { prettyClass } from "@/lib/utils";
+import { cn, prettyClass } from "@/lib/utils";
 import { severityColor } from "@/lib/severity";
+
+export type NodeEmphasis = "hot" | "dim" | "normal";
 
 export interface ChainStepData {
   findingId: string;
-  step: number;
+  step?: number;
   method: string;
   path: string;
   vulnClass: string;
   severity: string;
   isEntry: boolean;
   isImpact: boolean;
+  emphasis: NodeEmphasis;
 }
 
 const METHOD_TONE: Record<string, string> = {
@@ -25,14 +28,23 @@ export function ChainStepNode({ data }: NodeProps<ChainStepData>) {
   const method = data.method.toUpperCase();
   return (
     <div
-      className="w-[248px] cursor-pointer rounded-[10px] border border-line bg-ink-800 px-3 py-3 shadow-card"
+      className={cn(
+        "w-[248px] cursor-pointer rounded-[10px] border bg-ink-800 px-3 py-3 transition-opacity duration-150",
+        data.emphasis === "hot" && "border-accent/45 shadow-card",
+        data.emphasis === "normal" && "border-line shadow-card",
+        data.emphasis === "dim" && "border-line opacity-40",
+      )}
       style={{ borderLeftWidth: 3, borderLeftColor: severityColor(data.severity) }}
     >
       <Handle type="target" position={Position.Left} className="!h-2 !w-2 !border-0 !bg-accent" />
       <div className="flex items-center justify-between gap-2">
-        <span className="tabular flex h-5 min-w-5 items-center justify-center rounded-full bg-ink-700 text-2xs font-medium text-inktext">
-          {data.step}
-        </span>
+        {data.step != null ? (
+          <span className="tabular flex h-5 min-w-5 items-center justify-center rounded-full bg-ink-700 text-2xs font-medium text-inktext">
+            {data.step}
+          </span>
+        ) : (
+          <span className="h-5" />
+        )}
         <div className="flex gap-1">
           {data.isEntry ? (
             <span className="rounded px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-accent">
