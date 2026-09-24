@@ -1,4 +1,4 @@
-"""Phase 8 seams: heuristic strategy is a no-op swap; AI stubs stay unimplemented."""
+"""Phase 8 seams: heuristic strategy is a no-op swap; unused AI stubs stay unimplemented."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import httpx
 import pytest
 
 from sentinel_core.ai import AgenticExploitAgent, LLMRemediationAdvisor
+from sentinel_core.ai.gemini import AI_NOT_CONFIGURED, GeminiClient
 from sentinel_core.engine import ScanEngine
 from sentinel_core.models import Endpoint, Finding, Report, ScanConfig
 from sentinel_core.strategies import HeuristicStrategy, LLMTestStrategy
@@ -32,11 +33,40 @@ def test_llm_test_strategy_is_stub() -> None:
         LLMTestStrategy().generate_test_cases(endpoint)
 
 
-def test_remediation_advisor_is_stub() -> None:
-    """LLMRemediationAdvisor is not wired and must refuse to run."""
-    finding = Finding(id="demo", endpoint="GET /users/{user_id}")
-    with pytest.raises(NotImplementedError, match=r"# TODO\(ai\)"):
-        LLMRemediationAdvisor().advise(finding)
+def test_remediation_advisor_graceful_without_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without GEMINI_API_KEY, advise returns a clean fallback and does not raise."""
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.setattr("sentinel_core.ai.gemini._ENV_LOADED", True)
+    finding = Finding(
+        id="demo",
+        vuln_class="bola",
+        endpoint="GET /users/{user_id}",
+        severity_label="High",
+        business_impact="Cross-user read",
+    )
+    text = LLMRemediationAdvisor().advise(finding)
+    assert "AI not configured" in text
+    assert AI_NOT_CONFIGURED in text
+
+
+def test_remediation_advisor_uses_injected_client() -> None:
+    """advise / answer pass the finding or scan context to the client prompt."""
+
+    class _Fake(GeminiClient):
+        last = ""
+
+        def generate(self, prompt: str) -> str:
+            self.last = prompt
+            return "OK"
+
+    finding = Finding(id="demo", vuln_class="bola", endpoint="GET /users/{user_id}")
+    fake = _Fake()
+    advisor = LLMRemediationAdvisor(client=fake)
+    assert advisor.advise(finding) == "OK"
+    assert "GET /users/{user_id}" in fake.last
+    assert "senior penetration tester" in fake.last
+    assert advisor.answer("Which first?", [finding], [], target=BASE) == "OK"
+    assert "Which first?" in fake.last
 
 
 def test_agentic_exploit_agent_is_stub() -> None:

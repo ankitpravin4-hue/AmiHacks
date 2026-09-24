@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Plus,
   ShieldAlert,
+  Sparkles,
   Table2,
 } from "lucide-react";
 import { useScans } from "@/context/ScanContext";
@@ -17,6 +18,7 @@ const NAV = [
   { to: "/findings", label: "Findings", icon: ShieldAlert, badge: "findings" as const },
   { to: "/matrix", label: "Access Matrix", icon: Table2 },
   { to: "/chains", label: "Attack Chains", icon: GitGraph, badge: "chains" as const },
+  { to: "/ai", label: "AI Pentester", icon: Sparkles },
   { to: "/history", label: "History / Diff", icon: History, badge: "scans" as const },
 ];
 
@@ -26,6 +28,7 @@ function viewLabel(pathname: string): string {
   if (pathname === "/findings") return "Findings";
   if (pathname === "/matrix") return "Access Matrix";
   if (pathname === "/chains") return "Attack Chains";
+  if (pathname === "/ai") return "AI Pentester";
   if (pathname === "/history") return "History / Diff";
   return "Overview";
 }

@@ -1,23 +1,43 @@
-"""Stub: richer, context-aware remediations than the static finding strings."""
+"""On-demand Gemini advisor. Not called by ScanEngine — scans stay rule-based."""
 
 from __future__ import annotations
 
-from sentinel_core.models import Finding
+from sentinel_core.ai.gemini import GeminiClient, build_ask_prompt, build_explain_prompt
+from sentinel_core.models import AttackChain, Finding
 
 
 class LLMRemediationAdvisor:
-    """Future AI advisor for per-finding fix text.
+    """Explain a single finding, or answer a question about one scan.
 
-    # TODO(ai): ``advise`` will take a scored ``Finding`` (endpoint, evidence,
-    PoC, current static remediation) and return a longer, framework-aware
-    patch suggestion. Do not call any LLM provider from this module. The
-    engine still ships the detector-authored remediation strings.
+    The engine still ships detector-authored remediation strings. Call
+    ``advise`` / ``answer`` only from the on-demand service endpoints.
     """
 
+    def __init__(self, client: GeminiClient | None = None) -> None:
+        self._client = client or GeminiClient()
+
     def advise(self, finding: Finding) -> str:
-        """Not implemented — reserved for a future LLM rewrite of remediations."""
-        raise NotImplementedError(
-            "# TODO(ai): LLMRemediationAdvisor.advise will generate a richer "
-            f"fix for {finding.id or finding.endpoint} than the static string. "
-            "Not wired into ScanEngine."
-        )
+        """Return an AI explanation of one finding, or a graceful fallback."""
+        try:
+            return self._client.generate(build_explain_prompt(finding))
+        except Exception:
+            return (
+                "AI is unavailable right now (rate limit, network, or provider error). "
+                "The rule-based finding is unchanged — try again in a moment."
+            )
+
+    def answer(
+        self,
+        question: str,
+        findings: list[Finding],
+        chains: list[AttackChain],
+        target: str = "",
+    ) -> str:
+        """Answer a free-form question using this scan's findings and chains."""
+        try:
+            return self._client.generate(build_ask_prompt(question, findings, chains, target))
+        except Exception:
+            return (
+                "AI is unavailable right now (rate limit, network, or provider error). "
+                "The rule-based report is unchanged — try again in a moment."
+            )

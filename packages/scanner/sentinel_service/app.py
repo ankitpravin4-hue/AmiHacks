@@ -7,6 +7,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from sentinel_core.ai import LLMRemediationAdvisor, is_configured
+from sentinel_core.ai.gemini import AI_NOT_CONFIGURED, AI_RATE_LIMITED, AI_UNAVAILABLE
 from sentinel_core.engine import ScanEngine
 from sentinel_core.http_client import default_allowlist, url_is_allowed
 from sentinel_core.models import Finding, Report, ScanConfig
@@ -15,6 +17,8 @@ from sentinel_service.presets import resolve_identities_file
 from sentinel_service.progress import ProgressHub
 from sentinel_service.replay import replay_finding
 from sentinel_service.schemas import (
+    AIAnswer,
+    AskQuestion,
     ReplayResult,
     ScanAccepted,
     ScanCreate,
@@ -144,6 +148,31 @@ def create_app(
         except PermissionError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.post("/scans/{scan_id}/findings/{finding_key}/explain", response_model=AIAnswer)
+    async def explain_finding(scan_id: int, finding_key: str) -> AIAnswer:
+        """On-demand Gemini explanation of one stored finding. Never runs during a scan."""
+        finding = get_storage().get_finding(scan_id, finding_key)
+        if finding is None:
+            raise HTTPException(status_code=404, detail=f"Finding {finding_key!r} not in scan {scan_id}")
+        text = await asyncio.to_thread(LLMRemediationAdvisor().advise, finding)
+        return _ai_answer(text)
+
+    @app.post("/scans/{scan_id}/ask", response_model=AIAnswer)
+    async def ask_scan(scan_id: int, body: AskQuestion) -> AIAnswer:
+        """On-demand Gemini Q&A about this scan's findings and chains."""
+        question = body.question.strip()
+        if not question:
+            raise HTTPException(status_code=400, detail="Question is required")
+        report = _require_report(get_storage(), scan_id)
+        text = await asyncio.to_thread(
+            LLMRemediationAdvisor().answer,
+            question,
+            report.findings,
+            report.chains,
+            report.target,
+        )
+        return _ai_answer(text)
+
     @app.websocket("/scans/{scan_id}/progress")
     async def scan_progress(websocket: WebSocket, scan_id: int) -> None:
         """Stream percent + step; close the socket when the scan finishes."""
@@ -224,6 +253,12 @@ def _list_item(report: Report) -> ScanListItem:
         summary=report.summary,
         error=report.error,
     )
+
+
+def _ai_answer(text: str) -> AIAnswer:
+    configured = is_configured()
+    generated = configured and text not in {AI_NOT_CONFIGURED, AI_UNAVAILABLE, AI_RATE_LIMITED}
+    return AIAnswer(text=text, configured=configured, ai_generated=generated)
 
 
 def _detail(report: Report) -> ScanDetail:

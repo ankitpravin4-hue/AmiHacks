@@ -130,10 +130,17 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export interface AIAnswer {
+  text: string;
+  configured: boolean;
+  ai_generated: boolean;
+}
+
+async function request<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
+  const { timeoutMs, ...rest } = init ?? {};
   const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    signal: init?.signal ?? AbortSignal.timeout(15000),
+    ...rest,
+    signal: rest.signal ?? AbortSignal.timeout(timeoutMs ?? 15000),
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
@@ -170,6 +177,19 @@ export const api = {
     ),
 
   diff: (a: number, b: number) => request<ScanDiff>(`/scans/diff?a=${a}&b=${b}`),
+
+  explainFinding: (scanId: number, findingKey: string) =>
+    request<AIAnswer>(`/scans/${scanId}/findings/${encodeURIComponent(findingKey)}/explain`, {
+      method: "POST",
+      timeoutMs: 45000,
+    }),
+
+  askScan: (scanId: number, question: string) =>
+    request<AIAnswer>(`/scans/${scanId}/ask`, {
+      method: "POST",
+      body: JSON.stringify({ question }),
+      timeoutMs: 45000,
+    }),
 };
 
 export function connectProgress(

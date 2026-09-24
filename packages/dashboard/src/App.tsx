@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { ScanProvider } from "@/context/ScanContext";
+import { AIPentesterPage } from "@/pages/AIPentester";
 import { ChainsPage } from "@/pages/Chains";
 import { FindingDetailPage } from "@/pages/FindingDetail";
 import { FindingsPage } from "@/pages/Findings";
@@ -20,6 +21,7 @@ export function App() {
           <Route path="/findings/:findingKey" element={<FindingDetailPage />} />
           <Route path="/matrix" element={<MatrixPage />} />
           <Route path="/chains" element={<ChainsPage />} />
+          <Route path="/ai" element={<AIPentesterPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

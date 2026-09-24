@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Sparkles } from "lucide-react";
+import { AIAnswerCard } from "@/components/AIAnswerCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { SeverityBadge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
 import { useScans } from "@/context/ScanContext";
-import { api, type Finding, type ReplayResult } from "@/lib/api";
+import { api, type AIAnswer, type Finding, type ReplayResult } from "@/lib/api";
 import { chainTitle } from "@/lib/utils";
 
 export function FindingDetailPage() {
@@ -17,6 +18,9 @@ export function FindingDetailPage() {
   const [replay, setReplay] = useState<ReplayResult | null>(null);
   const [replaying, setReplaying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [explain, setExplain] = useState<AIAnswer | null>(null);
+  const [explaining, setExplaining] = useState(false);
+  const [explainError, setExplainError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentId || !findingKey) return;
@@ -39,6 +43,19 @@ export function FindingDetailPage() {
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
   };
+  const onExplain = async () => {
+    if (!currentId || !finding) return;
+    setExplaining(true);
+    setExplainError(null);
+    try {
+      setExplain(await api.explainFinding(currentId, finding.id));
+    } catch (err) {
+      setExplainError(err instanceof Error ? err.message : "Explain failed");
+    } finally {
+      setExplaining(false);
+    }
+  };
+
   const onReplay = async () => {
     setReplaying(true);
     try {
@@ -69,6 +86,29 @@ export function FindingDetailPage() {
       <p className="rounded-card border border-line bg-ink-800 px-5 py-4 text-sm leading-relaxed text-inktext">
         {finding.business_impact}
       </p>
+
+      <Card>
+        <CardHeader
+          title="Explain with AI"
+          subtitle="On-demand Gemini briefing for this finding only"
+          action={
+            <Button onClick={() => void onExplain()} disabled={explaining}>
+              <Sparkles className="h-4 w-4" />
+              {explaining ? "Asking Gemini…" : "Explain with AI"}
+            </Button>
+          }
+        />
+        <div className="px-5 py-4">
+          {explainError ? <ErrorState message={explainError} /> : null}
+          {explain ? (
+            <AIAnswerCard text={explain.text} generated={explain.ai_generated} className="border-0 p-0 shadow-none" />
+          ) : !explainError ? (
+            <p className="text-sm text-inktext-faint">
+              Click to generate an AI explanation. Advisory only — the rule-based finding stays the source of truth.
+            </p>
+          ) : null}
+        </div>
+      </Card>
 
       {finding.chain_id && current ? (
         <Link to="/chains" className="text-sm text-accent hover:underline">

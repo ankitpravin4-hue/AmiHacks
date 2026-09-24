@@ -84,3 +84,17 @@ class ProgressEvent(BaseModel):
     percent: int
     step: str
     status: str | None = None
+
+
+class AskQuestion(BaseModel):
+    """Body for POST /scans/{id}/ask."""
+
+    question: str = Field(..., min_length=1)
+
+
+class AIAnswer(BaseModel):
+    """On-demand Gemini text. ``ai_generated`` is false for fallbacks."""
+
+    text: str
+    configured: bool
+    ai_generated: bool
