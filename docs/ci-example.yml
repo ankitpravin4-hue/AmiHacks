@@ -1,0 +1,59 @@
+# SentinelAPI CI gate
+#
+# In real use, --target is YOUR team's staging (or ephemeral preview) API,
+# already on the scanner allow-list — never ShopAPI, never production.
+# ShopAPI is only the hackathon demo target so the workflow is copy-pasteable.
+
+name: SentinelAPI gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  sentinel-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ShopAPI (demo target only)
+        working-directory: packages/vulnerable-api
+        run: |
+          python -m pip install -r requirements.txt
+
+      - name: Install SentinelAPI CLI
+        working-directory: packages/scanner
+        run: |
+          python -m pip install -e .
+
+      - name: Boot ShopAPI
+        working-directory: packages/vulnerable-api
+        run: |
+          python -m app &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/healthz && exit 0
+            sleep 1
+          done
+          echo "ShopAPI did not become healthy" >&2
+          exit 1
+
+      - name: Scan and fail the job on High+ findings
+        working-directory: packages/scanner
+        run: |
+          sentinel scan \
+            --target http://127.0.0.1:8000 \
+            --identities shopapi \
+            --fail-on high \
+            --format sarif \
+            -o results.sarif
+
+      - name: Upload SARIF to GitHub code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: packages/scanner/results.sarif
