@@ -194,7 +194,7 @@ Rule-based today. Typed AI seams (no provider calls) are documented in
 
 ## Team
 
-Built by **Ankit** for AmiHacks.
+Built by **TEAM MUSHU** for AmiHacks.
 
 ## License
 
