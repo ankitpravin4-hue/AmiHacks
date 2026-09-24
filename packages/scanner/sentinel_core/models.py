@@ -85,6 +85,8 @@ class Finding(BaseModel):
     remediation: str = ""
     business_impact: str = ""
     chain_id: str | None = None
+    detector_confidence: float = 0.0
+    access_matrix: dict[str, dict[str, str]] | None = None
 
 
 class SummaryStats(BaseModel):

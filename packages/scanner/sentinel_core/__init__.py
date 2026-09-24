@@ -1,5 +1,14 @@
-"""SentinelAPI scanner core — spec parsing, identities, and safe HTTP."""
+"""SentinelAPI scanner core — spec parsing, identities, safe HTTP, detectors."""
 
+from sentinel_core.detectors import (
+    AuthMisconfigDetector,
+    BolaDetector,
+    Detector,
+    ExcessiveDataExposureDetector,
+    MassAssignmentDetector,
+    RateLimitDetector,
+    run_all_detectors,
+)
 from sentinel_core.http_client import (
     AllowlistDeniedError,
     SafeClient,
@@ -21,12 +30,18 @@ from sentinel_core.spec_parser import SpecParser
 
 __all__ = [
     "AllowlistDeniedError",
+    "AuthMisconfigDetector",
+    "BolaDetector",
     "CrossAccessCase",
+    "Detector",
     "Endpoint",
     "Evidence",
+    "ExcessiveDataExposureDetector",
     "Finding",
     "Identity",
     "IdentityProvider",
+    "MassAssignmentDetector",
+    "RateLimitDetector",
     "Report",
     "RequestEvidence",
     "ResponseEvidence",
@@ -35,4 +50,5 @@ __all__ = [
     "SpecParser",
     "SummaryStats",
     "UnsafeMethodError",
+    "run_all_detectors",
 ]

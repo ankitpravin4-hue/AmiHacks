@@ -184,6 +184,7 @@ class SafeClient:
         json: Any | None = None,
         content: bytes | str | None = None,
         params: Mapping[str, Any] | None = None,
+        retry: bool = True,
     ) -> Evidence:
         """Send one request and return redacted evidence.
 
@@ -199,7 +200,9 @@ class SafeClient:
         self._assert_safe_method(method_u)
         header_map = dict(headers or {})
 
-        response = await self._send(method_u, url, header_map, json, content, params)
+        response = await self._send(
+            method_u, url, header_map, json, content, params, retry=retry
+        )
         return Evidence(
             request=RequestEvidence(
                 method=method_u,
@@ -221,10 +224,12 @@ class SafeClient:
         json: Any,
         content: bytes | str | None,
         params: Mapping[str, Any] | None,
+        retry: bool = True,
     ) -> httpx.Response:
         delay = 0.2
         last_error: Exception | None = None
-        for attempt in range(self.max_retries + 1):
+        retries = self.max_retries if retry else 0
+        for attempt in range(retries + 1):
             async with self._semaphore:
                 await self._throttle(url)
                 try:
@@ -238,12 +243,12 @@ class SafeClient:
                     )
                 except httpx.TransportError as exc:
                     last_error = exc
-                    if attempt >= self.max_retries:
+                    if attempt >= retries:
                         raise
                     await asyncio.sleep(delay)
                     delay *= 2
                     continue
-            if response.status_code in RETRYABLE_STATUS and attempt < self.max_retries:
+            if response.status_code in RETRYABLE_STATUS and attempt < retries:
                 await asyncio.sleep(delay)
                 delay *= 2
                 continue
