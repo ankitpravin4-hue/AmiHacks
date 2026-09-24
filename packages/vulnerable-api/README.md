@@ -1,10 +1,18 @@
 # ShopAPI — intentionally vulnerable demo target
 
-Local-only e-commerce API used as SentinelAPI's allow-listed scan target.
-**Do not expose this service to the internet. Do not point the scanner at
-any host that is not this demo.**
+Local-only e-commerce API used as SentinelAPI's **only** allow-listed scan
+target (`http://127.0.0.1:8000`). **Do not expose this service to the
+internet. Do not point the scanner at any host that is not this demo.**
 
 ## Run
+
+From the repo root (preferred):
+
+```bash
+./run.sh --seed
+```
+
+Or this package alone:
 
 ```bash
 python3 -m venv .venv
@@ -13,7 +21,8 @@ pip install -r requirements.txt
 python -m app
 ```
 
-Defaults: `127.0.0.1:8000`. Override with `HOST` / `PORT` / `DATABASE_URL`.
+Defaults: `127.0.0.1:8000`. Override with `HOST` / `PORT` / `DATABASE_URL`
+(see the repo-root `.env.example`).
 
 | URL | Purpose |
 | --- | --- |
@@ -29,6 +38,8 @@ python seed.py
 ```
 
 ## Seeded identities
+
+The scanner identities preset is **`shopapi`** (same names and tokens):
 
 | Email | Password | Role | Bearer token |
 | --- | --- | --- | --- |

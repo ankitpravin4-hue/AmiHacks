@@ -1,6 +1,7 @@
 # Secrets
 .env
 .env.local
+.env.*.local
 *.pem
 *.key
 
@@ -32,5 +33,16 @@ packages/dashboard/dist/
 .idea/
 .vscode/
 
-# Scanner artifacts (later phases)
+# Scanner artifacts
 packages/scanner/data/
+packages/scanner/results.sarif
+results.sarif
+
+# run.sh logs / pid leftovers
+.run/
+*.log
+
+# Coverage
+.coverage
+htmlcov/
+coverage/
