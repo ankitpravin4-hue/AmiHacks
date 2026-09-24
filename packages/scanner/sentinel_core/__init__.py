@@ -33,7 +33,13 @@ from sentinel_core.models import (
 )
 from sentinel_core.scoring import SeverityScorer
 from sentinel_core.spec_parser import SpecParser
-from sentinel_core.storage import get_finding, get_report, list_reports, save_report
+from sentinel_core.storage import (
+    get_finding,
+    get_report,
+    get_storage,
+    list_reports,
+    save_report,
+)
 
 __all__ = [
     "AllowlistDeniedError",
@@ -65,6 +71,7 @@ __all__ = [
     "UnsafeMethodError",
     "get_finding",
     "get_report",
+    "get_storage",
     "list_reports",
     "run_all_detectors",
     "save_report",

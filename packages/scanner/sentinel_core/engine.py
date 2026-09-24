@@ -14,7 +14,7 @@ from sentinel_core.identity import IdentityProvider
 from sentinel_core.models import Finding, Report, ScanConfig, SummaryStats
 from sentinel_core.scoring import SeverityScorer
 from sentinel_core.spec_parser import SpecParser
-from sentinel_core.storage import configure, save_report
+from sentinel_core.storage import configure, get_report, save_report
 
 SCANNER_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_IDENTITIES = SCANNER_ROOT / "configs" / "shopapi.identities.yaml"
@@ -32,10 +32,18 @@ class ScanEngine:
         self,
         scan_config: ScanConfig,
         on_progress: ProgressCallback | None = None,
+        scan_id: int | None = None,
     ) -> Report:
-        """Parse the spec, run detectors, score, chain, and save the report."""
+        """Parse the spec, run detectors, score, chain, and save the report.
+
+        ``scan_id`` updates an existing running placeholder created by the service.
+        """
         config = _normalize_config(scan_config)
         started = datetime.now(timezone.utc)
+        if scan_id is not None:
+            existing = get_report(scan_id)
+            if existing is not None and existing.started_at is not None:
+                started = existing.started_at
         _emit(on_progress, 5, "Parsing OpenAPI spec")
 
         parser = SpecParser()
@@ -64,9 +72,11 @@ class ScanEngine:
         _emit(on_progress, 90, f"Built {len(chains)} attack chains")
 
         report = Report(
+            id=scan_id,
             target=config.target,
             started_at=started,
             finished_at=datetime.now(timezone.utc),
+            status="completed",
             findings=findings,
             chains=chains,
             access_matrix=_lift_access_matrix(findings),

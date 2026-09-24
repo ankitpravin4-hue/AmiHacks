@@ -139,6 +139,8 @@ class Report(BaseModel):
     target: str = ""
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    status: str = "completed"
+    error: str | None = None
     findings: list[Finding] = Field(default_factory=list)
     chains: list[AttackChain] = Field(default_factory=list)
     access_matrix: dict[str, dict[str, str]] | None = None
