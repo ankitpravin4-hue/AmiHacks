@@ -1,5 +1,6 @@
-"""SentinelAPI scanner core — spec parsing, identities, safe HTTP, detectors."""
+"""SentinelAPI scanner core — spec parsing, identities, detectors, engine."""
 
+from sentinel_core.attack_chain import AttackChainBuilder
 from sentinel_core.detectors import (
     AuthMisconfigDetector,
     BolaDetector,
@@ -9,6 +10,7 @@ from sentinel_core.detectors import (
     RateLimitDetector,
     run_all_detectors,
 )
+from sentinel_core.engine import ScanEngine
 from sentinel_core.http_client import (
     AllowlistDeniedError,
     SafeClient,
@@ -16,6 +18,7 @@ from sentinel_core.http_client import (
 )
 from sentinel_core.identity import CrossAccessCase, IdentityProvider
 from sentinel_core.models import (
+    AttackChain,
     Endpoint,
     Evidence,
     Finding,
@@ -24,12 +27,18 @@ from sentinel_core.models import (
     RequestEvidence,
     ResponseEvidence,
     ScanConfig,
+    ScoreFactor,
+    SeverityBreakdown,
     SummaryStats,
 )
+from sentinel_core.scoring import SeverityScorer
 from sentinel_core.spec_parser import SpecParser
+from sentinel_core.storage import get_finding, get_report, list_reports, save_report
 
 __all__ = [
     "AllowlistDeniedError",
+    "AttackChain",
+    "AttackChainBuilder",
     "AuthMisconfigDetector",
     "BolaDetector",
     "CrossAccessCase",
@@ -47,8 +56,16 @@ __all__ = [
     "ResponseEvidence",
     "SafeClient",
     "ScanConfig",
+    "ScanEngine",
+    "ScoreFactor",
+    "SeverityBreakdown",
+    "SeverityScorer",
     "SpecParser",
     "SummaryStats",
     "UnsafeMethodError",
+    "get_finding",
+    "get_report",
+    "list_reports",
     "run_all_detectors",
+    "save_report",
 ]

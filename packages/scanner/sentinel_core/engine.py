@@ -1,0 +1,120 @@
+"""End-to-end scan orchestration: parse → probe → score → chain → persist."""
+
+from __future__ import annotations
+
+from collections import Counter
+from collections.abc import Callable
+from datetime import datetime, timezone
+from pathlib import Path
+
+from sentinel_core.attack_chain import AttackChainBuilder
+from sentinel_core.detectors import run_all_detectors
+from sentinel_core.http_client import SafeClient
+from sentinel_core.identity import IdentityProvider
+from sentinel_core.models import Finding, Report, ScanConfig, SummaryStats
+from sentinel_core.scoring import SeverityScorer
+from sentinel_core.spec_parser import SpecParser
+from sentinel_core.storage import configure, save_report
+
+SCANNER_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_IDENTITIES = SCANNER_ROOT / "configs" / "shopapi.identities.yaml"
+
+ProgressCallback = Callable[[int, str], None]
+
+
+class ScanEngine:
+    """Run a full allow-listed scan and persist the report."""
+
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        configure(db_path)
+
+    async def run(
+        self,
+        scan_config: ScanConfig,
+        on_progress: ProgressCallback | None = None,
+    ) -> Report:
+        """Parse the spec, run detectors, score, chain, and save the report."""
+        config = _normalize_config(scan_config)
+        started = datetime.now(timezone.utc)
+        _emit(on_progress, 5, "Parsing OpenAPI spec")
+
+        parser = SpecParser()
+        spec_url = config.spec_url or f"{config.target.rstrip('/')}/openapi.json"
+        endpoints = parser.load_from_url(spec_url, allowed_base_urls=config.allowlist)
+        _emit(on_progress, 15, f"Loaded {len(endpoints)} endpoints")
+
+        identities_path = Path(config.identities_file or DEFAULT_IDENTITIES)
+        identities = IdentityProvider.from_file(identities_path)
+        _emit(on_progress, 20, f"Loaded {len(identities.all())} identities")
+
+        _emit(on_progress, 25, "Running detectors")
+        async with SafeClient(
+            allowed_base_urls=config.allowlist,
+            safe_mode=config.safe_mode,
+        ) as client:
+            findings = await run_all_detectors(endpoints, identities, client)
+        _emit(on_progress, 70, f"Detectors produced {len(findings)} findings")
+
+        scorer = SeverityScorer()
+        for finding in findings:
+            scorer.apply(finding)
+        _emit(on_progress, 82, "Scored findings")
+
+        chains = AttackChainBuilder().build(findings)
+        _emit(on_progress, 90, f"Built {len(chains)} attack chains")
+
+        report = Report(
+            target=config.target,
+            started_at=started,
+            finished_at=datetime.now(timezone.utc),
+            findings=findings,
+            chains=chains,
+            access_matrix=_lift_access_matrix(findings),
+            summary=_summarize(findings),
+            scan_config=config,
+        )
+        save_report(report)
+        _emit(on_progress, 100, "Report persisted")
+        return report
+
+
+def _normalize_config(config: ScanConfig) -> ScanConfig:
+    """Fill target / spec / allow-list defaults without scanning the world."""
+    target = (config.target or "http://127.0.0.1:8000").rstrip("/")
+    allowlist = list(config.allowlist) or [target]
+    spec_url = config.spec_url or f"{target}/openapi.json"
+    identities = config.identities_file or str(DEFAULT_IDENTITIES)
+    return config.model_copy(
+        update={
+            "target": target,
+            "spec_url": spec_url,
+            "allowlist": allowlist,
+            "identities_file": identities,
+        }
+    )
+
+
+def _lift_access_matrix(
+    findings: list[Finding],
+) -> dict[str, dict[str, str]] | None:
+    """Prefer the BOLA detector's identity matrix on the report."""
+    for finding in findings:
+        if finding.access_matrix:
+            return finding.access_matrix
+    return None
+
+
+def _summarize(findings: list[Finding]) -> SummaryStats:
+    """Counts by severity label and vuln class."""
+    by_severity = Counter(item.severity_label or "Unscored" for item in findings)
+    by_class = Counter(item.vuln_class for item in findings)
+    return SummaryStats(
+        total_findings=len(findings),
+        by_severity=dict(by_severity),
+        by_vuln_class=dict(by_class),
+    )
+
+
+def _emit(callback: ProgressCallback | None, percent: int, step: str) -> None:
+    if callback is not None:
+        callback(percent, step)

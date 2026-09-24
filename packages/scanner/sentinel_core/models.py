@@ -1,9 +1,4 @@
-"""Shared Pydantic models for the scanner core.
-
-`Finding` and `Report` are field skeletons here — detectors (Phase 3) and
-scoring (Phase 4) populate them. `Endpoint`, `Identity`, and `Evidence`
-are used immediately by the parser, identity matrix, and safe client.
-"""
+"""Shared Pydantic models for the scanner core."""
 
 from __future__ import annotations
 
@@ -70,8 +65,27 @@ class Evidence(BaseModel):
     response: ResponseEvidence
 
 
+class ScoreFactor(BaseModel):
+    """One scoring input the dashboard can explain."""
+
+    name: str
+    score: float
+    max_score: float
+    reason: str
+
+
+class SeverityBreakdown(BaseModel):
+    """CVSS-inspired split: impact + exploitability = 0–10 score."""
+
+    impact: float = 0.0
+    exploitability: float = 0.0
+    score: float = 0.0
+    label: str = ""
+    factors: list[ScoreFactor] = Field(default_factory=list)
+
+
 class Finding(BaseModel):
-    """One vulnerability finding. Populated by detectors and scoring."""
+    """One vulnerability finding. Detectors fill evidence; the scorer fills severity."""
 
     id: str = ""
     title: str = ""
@@ -87,6 +101,7 @@ class Finding(BaseModel):
     chain_id: str | None = None
     detector_confidence: float = 0.0
     access_matrix: dict[str, dict[str, str]] | None = None
+    severity_breakdown: SeverityBreakdown | None = None
 
 
 class SummaryStats(BaseModel):
@@ -107,12 +122,25 @@ class ScanConfig(BaseModel):
     identities_file: str | None = None
 
 
-class Report(BaseModel):
-    """Full scan result. Assembled by the engine in Phase 4."""
+class AttackChain(BaseModel):
+    """Ordered findings that combine into a single attacker story."""
 
+    id: str
+    finding_ids: list[str] = Field(default_factory=list)
+    narrative: str = ""
+    max_severity_score: float = 0.0
+    max_severity_label: str = ""
+
+
+class Report(BaseModel):
+    """Full scan result. Assembled by the engine and persisted to SQLite."""
+
+    id: int | None = None
     target: str = ""
     started_at: datetime | None = None
     finished_at: datetime | None = None
     findings: list[Finding] = Field(default_factory=list)
+    chains: list[AttackChain] = Field(default_factory=list)
+    access_matrix: dict[str, dict[str, str]] | None = None
     summary: SummaryStats = Field(default_factory=SummaryStats)
     scan_config: ScanConfig = Field(default_factory=ScanConfig)
