@@ -73,3 +73,11 @@ export function ChainStepNode({ data }: NodeProps<ChainStepData>) {
     </div>
   );
 }
+
+export function StandaloneGroupNode({ data }: { data: { label: string } }) {
+  return (
+    <div className="h-full w-full rounded-[10px] border border-dashed border-line bg-ink-950/50 px-3 py-2">
+      <p className="text-2xs font-medium uppercase tracking-[0.14em] text-inktext-faint">{data.label}</p>
+    </div>
+  );
+}

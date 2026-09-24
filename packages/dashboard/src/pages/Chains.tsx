@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactFlow, {
   Background,
@@ -10,16 +10,21 @@ import ReactFlow, {
   type Node,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { ChainStepNode, type ChainStepData } from "@/components/ChainStepNode";
+import { ChainStepNode, StandaloneGroupNode, type ChainStepData } from "@/components/ChainStepNode";
 import { EmptyState, ErrorState, LoadingState } from "@/components/EmptyState";
 import { Card } from "@/components/ui/card";
 import { SeverityBadge } from "@/components/ui/badge";
 import { useScans } from "@/context/ScanContext";
-import { layoutSurface } from "@/lib/chainLayout";
+import {
+  STANDALONE_GROUP_ID,
+  SURFACE_NODE_HEIGHT,
+  SURFACE_NODE_WIDTH,
+  layoutSurface,
+} from "@/lib/chainLayout";
 import { cn, chainTitle } from "@/lib/utils";
 import type { AttackChain, Finding } from "@/lib/api";
 
-const NODE_TYPES = { chainStep: ChainStepNode };
+const NODE_TYPES = { chainStep: ChainStepNode, standaloneGroup: StandaloneGroupNode };
 const EDGE_HOT = "#6b8cff";
 const EDGE_DIM = "#4a5160";
 const ALL = "all";
@@ -86,22 +91,41 @@ function buildGraph(
   findings: Finding[],
   chains: AttackChain[],
   selected: string,
-): { nodes: Node<ChainStepData>[]; edges: Edge[] } {
+  canvasWidth: number,
+): { nodes: Node[]; edges: Edge[] } {
   const links = chainEdges(chains);
-  const positions = layoutSurface(
+  const { positions, group } = layoutSurface(
     findings.map((finding) => finding.id),
-    links,
+    chains,
+    canvasWidth,
   );
 
-  const nodes: Node<ChainStepData>[] = findings.map((finding) => {
+  const nodes: Node[] = [];
+  if (group) {
+    nodes.push({
+      id: group.id,
+      type: "standaloneGroup",
+      position: { x: group.x, y: group.y },
+      data: { label: "Standalone findings" },
+      style: { width: group.width, height: group.height },
+      selectable: false,
+      draggable: false,
+      zIndex: -1,
+    });
+  }
+  for (const finding of findings) {
     const role = roleInChains(finding.id, chains, selected);
     const { method, path } = splitEndpoint(finding.endpoint);
-    const emphasis =
-      selected === ALL ? "normal" : role.inSelected ? "hot" : "dim";
-    return {
+    const placed = positions.get(finding.id);
+    const emphasis = selected === ALL ? "normal" : role.inSelected ? "hot" : "dim";
+    nodes.push({
       id: finding.id,
       type: "chainStep",
-      position: positions.get(finding.id) ?? { x: 0, y: 0 },
+      position: { x: placed?.x ?? 0, y: placed?.y ?? 0 },
+      parentNode: placed?.parentNode,
+      extent: placed?.parentNode ? "parent" : undefined,
+      width: SURFACE_NODE_WIDTH,
+      height: SURFACE_NODE_HEIGHT,
       data: {
         findingId: finding.id,
         step: role.step,
@@ -114,8 +138,8 @@ function buildGraph(
         emphasis,
       },
       draggable: false,
-    };
-  });
+    });
+  }
 
   const edges: Edge[] = links.map((link) => {
     const hot = selected === ALL || link.chainId === selected;
@@ -145,20 +169,31 @@ function buildGraph(
 function AttackSurfaceCanvas({
   nodes,
   edges,
+  canvasWidth,
   onNodeClick,
 }: {
-  nodes: Node<ChainStepData>[];
+  nodes: Node[];
   edges: Edge[];
+  canvasWidth: number;
   onNodeClick: (findingId: string) => void;
 }) {
   const { fitView } = useReactFlow();
-  const fingerprint = nodes.map((node) => node.id).join("|");
+  const fingerprint = `${canvasWidth}:${nodes
+    .filter((node) => node.type === "chainStep")
+    .map((node) => node.id)
+    .join("|")}`;
 
   useEffect(() => {
+    let frame = 0;
     const timer = window.setTimeout(() => {
-      fitView({ padding: 0.2, minZoom: 0.45, maxZoom: 1.05 });
-    }, 40);
-    return () => window.clearTimeout(timer);
+      frame = window.requestAnimationFrame(() => {
+        fitView({ padding: 0.08, minZoom: 0.4, maxZoom: 1.25 });
+      });
+    }, 80);
+    return () => {
+      window.clearTimeout(timer);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, [fingerprint, fitView]);
 
   return (
@@ -167,15 +202,20 @@ function AttackSurfaceCanvas({
       edges={edges}
       nodeTypes={NODE_TYPES}
       fitView
-      fitViewOptions={{ padding: 0.2, minZoom: 0.45, maxZoom: 1.05 }}
+      fitViewOptions={{ padding: 0.08, minZoom: 0.4, maxZoom: 1.25 }}
       minZoom={0.35}
       maxZoom={1.4}
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
       proOptions={{ hideAttribution: true }}
+      onInit={(instance) => {
+        instance.fitView({ padding: 0.08, minZoom: 0.4, maxZoom: 1.25 });
+      }}
       onNodeClick={(_, node) => {
-        onNodeClick((node.data as ChainStepData).findingId);
+        if (node.id === STANDALONE_GROUP_ID || node.type === "standaloneGroup") return;
+        const findingId = (node.data as ChainStepData).findingId;
+        if (findingId) onNodeClick(findingId);
       }}
     >
       <Background color="#2d3340" gap={20} size={1} />
@@ -188,12 +228,27 @@ export function ChainsPage() {
   const { current, scans, loading, error } = useScans();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string>(ALL);
+  const [canvasWidth, setCanvasWidth] = useState(0);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const active = current?.chains.find((chain) => chain.id === selected) ?? null;
 
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const update = () => {
+      const next = Math.round(el.clientWidth);
+      setCanvasWidth((prev) => (prev === next ? prev : next));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [current]);
+
   const { nodes, edges } = useMemo(() => {
-    if (!current) return { nodes: [] as Node<ChainStepData>[], edges: [] as Edge[] };
-    return buildGraph(current.findings, current.chains, selected);
-  }, [current, selected]);
+    if (!current) return { nodes: [] as Node[], edges: [] as Edge[] };
+    return buildGraph(current.findings, current.chains, selected, canvasWidth);
+  }, [current, selected, canvasWidth]);
 
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} />;
@@ -279,14 +334,18 @@ export function ChainsPage() {
         </Card>
       )}
 
-      <div className="h-[min(70vh,640px)] min-h-[480px] overflow-hidden rounded-card border border-line bg-ink-800">
+      <div
+        ref={canvasRef}
+        className="h-[600px] max-h-[640px] min-h-[560px] overflow-hidden rounded-card border border-line bg-ink-800"
+      >
         {nodes.length === 0 ? (
           <p className="p-8 text-sm text-inktext-faint">No findings in this scan.</p>
-        ) : (
+        ) : canvasWidth < 80 ? null : (
           <ReactFlowProvider>
             <AttackSurfaceCanvas
               nodes={nodes}
               edges={edges}
+              canvasWidth={canvasWidth}
               onNodeClick={(findingId) => navigate(`/findings/${encodeURIComponent(findingId)}`)}
             />
           </ReactFlowProvider>
